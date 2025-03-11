@@ -1,17 +1,16 @@
 import {it, expect, test, beforeEach,describe, vitest, vi} from 'vitest'
 import {
-    RecordedArrayValuesRead,
     RecordedPropertyRead,
-    recordedReadsArraysAreEqual,
     WatchedProxyFacade
 } from "./watchedProxyFacade";
 import _ from "underscore"
 import {arraysAreEqualsByPredicateFn, isObject, visitReplace} from "./Util";
-import {Clazz, ObjKey, RecordedRead} from "./common";
+import {Clazz, ObjKey, RecordedRead, recordedReadsArraysAreEqual} from "./common";
 import {deleteProperty, installWriteTracker} from "./globalWriteTracking";
 import {ProxyFacade} from "./proxyFacade";
 import exp from "constants";
 import {fail} from "assert";
+import {RecordedArrayValuesRead} from "./class-trackers/array";
 
 beforeEach(() => {
 

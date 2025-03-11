@@ -1,6 +1,15 @@
-import {AfterWriteListener, DualUseTracker, ObjKey, runAndCallListenersOnce_after} from "../common";
-import {throwError} from "../Util";
-import {writeListenersForObject} from "../globalObjectWriteTracking";
+import {
+    DualUseTracker,
+    ForWatchedProxyHandler,
+    ObjKey,
+    RecordedRead,
+    RecordedReadOnProxiedObject,
+    runAndCallListenersOnce_after
+} from "../common";
+import {arraysAreShallowlyEqual} from "../Util";
+import {getWriteListenersForObject, writeListenersForObject} from "../globalObjectWriteTracking";
+import {installWriteTracker} from "../globalWriteTracking";
+import {WatchedProxyHandler} from "../watchedProxyFacade";
 
 
 /**
@@ -104,5 +113,138 @@ export class WriteTrackedArray<T> extends Array<T> implements DualUseTracker<Arr
         this._fireAfterUnspecificWrite();
         return result;
     }
+
+}
+
+export class RecordedArrayValuesRead extends RecordedReadOnProxiedObject {
+    values: unknown[];
+
+    protected get origObj() {
+        return this.obj as unknown[];
+    }
+
+
+    constructor(values: unknown[]) {
+        super();
+        this.values = values;
+    }
+
+    onChange(listener: () => void, trackOriginal = false) {
+        if (trackOriginal) {
+            installWriteTracker(this.origObj);
+        }
+        getWriteListenersForObject(this.origObj).afterChangeOwnKeys_listeners.add(listener);
+        getWriteListenersForObject(this.origObj).afterChangeAnyProperty_listeners.add(listener);
+        getWriteListenersForObject(this.origObj).afterUnspecificWrite.add(listener);
+    }
+
+    offChange(listener: () => void) {
+        getWriteListenersForObject(this.origObj).afterUnspecificWrite.delete(listener);
+        getWriteListenersForObject(this.origObj).afterChangeAnyProperty_listeners.delete(listener);
+        getWriteListenersForObject(this.origObj).afterChangeOwnKeys_listeners.delete(listener);
+    }
+
+    equals(other: RecordedRead): boolean {
+        if (!(other instanceof RecordedArrayValuesRead)) {
+            return false;
+        }
+
+        return this.proxyHandler === other.proxyHandler && this.obj === other.obj && arraysAreShallowlyEqual(this.values, other.values);
+    }
+
+    get isChanged(): boolean {
+        return !arraysAreShallowlyEqual(this.values, this.origObj);
+    }
+
+
+}
+
+/**
+ * Patches methods / accessors
+ */
+export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements ForWatchedProxyHandler<Array<T>> {
+    get _WatchedProxyHandler(): WatchedProxyHandler {
+        throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the handler when called through the handler
+    }
+
+    get _target(): Array<T> {
+        throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the value when called through the handler
+    }
+
+    protected _fireAfterValuesRead() {
+        let recordedArrayValuesRead = new RecordedArrayValuesRead([...this._target]);
+        this._WatchedProxyHandler?.fireAfterRead(recordedArrayValuesRead);
+    }
+
+    /**
+     * Pretend that this is an array
+     */
+    get ["constructor"]() {
+        return Array;
+    }
+
+    values(): ArrayIterator<T> {
+        const result = this._target.values();
+        this._fireAfterValuesRead();
+        return result;
+    }
+
+    entries(): ArrayIterator<[number, T]> {
+        const result = this._target.entries();
+        this._fireAfterValuesRead();
+        return result;
+    }
+
+    [Symbol.iterator](): ArrayIterator<T> {
+        const result = this._target[Symbol.iterator]();
+        this._fireAfterValuesRead();
+        return result;
+    }
+
+    get length(): number {
+        const result = this._target.length;
+        this._fireAfterValuesRead();
+        return result;
+    }
+
+    //@ts-ignore
+    shift(...args: any[]) {
+        return runAndCallListenersOnce_after(this._target, (callListeners) => {
+            //@ts-ignore
+            const result = this._target.shift(...args);
+            callListeners(getWriteListenersForObject(this._target)?.afterChangeOwnKeys_listeners);
+            callListeners(getWriteListenersForObject(this._target)?.afterUnspecificWrite);
+            callListeners(getWriteListenersForObject(this._target)?.afterAnyWrite_listeners);
+            this._fireAfterValuesRead();
+            return result;
+        });
+    }
+
+
+    /**
+     * Keep this method so it it treated as handled and not as making-unspecific-reads
+     * @param args
+     */
+    forEach(...args: any[]) {
+        //@ts-ignore
+        return super.forEach(...args); //reads "length" an thererfore triggers the read
+    }
+
+
+    //@ts-ignore
+    pop(...args: any[]): T | undefined {
+        return runAndCallListenersOnce_after(this._target, (callListeners) => {
+            //@ts-ignore
+            const result = this._target.pop(...args);
+            callListeners(getWriteListenersForObject(this._target)?.afterChangeOwnKeys_listeners);
+            callListeners(getWriteListenersForObject(this._target)?.afterUnspecificWrite);
+            callListeners(getWriteListenersForObject(this._target)?.afterAnyWrite_listeners);
+            this._fireAfterValuesRead();
+            return result;
+        });
+
+    }
+
+    //TODO:    slice(start?: number, end?: number): T[] {}
 
 }

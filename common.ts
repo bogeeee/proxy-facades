@@ -1,5 +1,5 @@
 import {WatchedProxyHandler} from "./watchedProxyFacade";
-import {read, throwError} from "./Util";
+import {arraysAreEqualsByPredicateFn, read, throwError} from "./Util";
 
 export type ObjKey = string | symbol;
 
@@ -181,4 +181,10 @@ export interface ForWatchedProxyHandler<T> extends DualUseTracker<T> {
      * The original (unproxied) object
      */
     get _target(): T
+}
+
+
+
+export function recordedReadsArraysAreEqual(a: RecordedRead[], b: RecordedRead[]) {
+    return arraysAreEqualsByPredicateFn(a, b, (a, b) => a.equals(b));
 }
