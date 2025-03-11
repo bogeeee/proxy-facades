@@ -1,0 +1,4 @@
+So far, clone from here:
+See https://github.com/bogeeee/react-deepwatch
+
+now i want to split it into 2 projects
