@@ -2,8 +2,8 @@
 ### Prepare
 
 ```bash
-git clone https://github.com/bogeeee/react-deepwatch.git
-cd react-deepwatch
+git clone https://github.com/bogeeee/proxy-facades.git
+cd proxy-facades
 npm install --ignore-scripts
 ```
 
@@ -11,14 +11,14 @@ npm install --ignore-scripts
 ### Run the tests
 from inside the project dir:
 ```bash
-cd react-deepwatch
+cd proxy-facades
 npm run test
 ```
 
 ### Run the web based (manual) tests
 from inside the project dir:
 ```bash
-cd react-deepwatch
+cd proxy-facades
 npm intall
 npm run tests:web:prepare
 npm run tests:web
