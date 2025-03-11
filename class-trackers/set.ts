@@ -1,5 +1,5 @@
 import {
-    AfterWriteListener,
+    AfterWriteListener, ClassTrackingConfiguration,
     DualUseTracker,
     ForWatchedProxyHandler,
     ObjKey,
@@ -37,29 +37,6 @@ export function getWriteListenersForSet(set: Set<unknown>) {
  * The "this" may be different in these cases.
  */
 export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>{
-
-    /**
-     * Built-in Methods, which are using fields / calling methods on the proxy transparently/loyally, so those methods don't call/use internal stuff directly.
-     * Tested with, see dev_generateEsRuntimeBehaviourCheckerCode.ts
-     * May include read-only / reader methods
-     */
-    static knownHighLevelMethods = new Set<keyof Set<unknown>>([]) as Set<ObjKey>;
-
-    /**
-     * Non-high level
-     */
-    static readOnlyMethods = new Set<keyof Set<unknown>>([]) as Set<ObjKey>;
-
-    /**
-     * Non-high level
-     */
-    static readOnlyFields = new Set<keyof Set<unknown>>(["size"]) as Set<ObjKey>;
-
-    /**
-     * Default, if not listed as high-level method
-     */
-    static receiverMustBeNonProxied = true;
-
 
     protected _fireAfterUnspecificWrite() {
         runAndCallListenersOnce_after(this._target, (callListeners) => {
@@ -265,4 +242,31 @@ export class WatchedSet_for_WatchedProxyHandler<T> extends Set<T> implements For
         this._fireAfterValuesRead();
         return result;
     }
+}
+
+export const config = new class extends ClassTrackingConfiguration {
+    readTracker= WatchedSet_for_WatchedProxyHandler;
+    changeTracker = WriteTrackedSet
+
+    /**
+     * Built-in Methods, which are using fields / calling methods on the proxy transparently/loyally, so those methods don't call/use internal stuff directly.
+     * Tested with, see dev_generateEsRuntimeBehaviourCheckerCode.ts
+     * May include read-only / reader methods
+     */
+    static knownHighLevelMethods = new Set<keyof Set<unknown>>([]) as Set<ObjKey>;
+
+    /**
+     * Non-high level
+     */
+    static readOnlyMethods = new Set<keyof Set<unknown>>([]) as Set<ObjKey>;
+
+    /**
+     * Non-high level
+     */
+    static readOnlyFields = new Set<keyof Set<unknown>>(["size"]) as Set<ObjKey>;
+
+    /**
+     * Default, if not listed as high-level method
+     */
+    static receiverMustBeNonProxied = true;
 }

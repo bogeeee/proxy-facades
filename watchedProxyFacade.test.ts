@@ -489,6 +489,8 @@ describe('WatchedProxyFacade tests', () => {
         let watchedProxyFacade = new WatchedProxyFacade();
         const proxy = watchedProxyFacade.getProxyFor(sampleGraph);
     });
+
+    // TODO: Does it work when creating the proxy, **after** the write tracker has been installed?
 });
 
 

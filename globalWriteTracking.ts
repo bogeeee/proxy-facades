@@ -8,29 +8,10 @@ import {AfterWriteListener, Clazz, ObjKey, RecordedReadOnProxiedObject, runAndCa
 import {ObjectProxyHandler, writeListenersForObject} from "./globalObjectWriteTracking";
 import {WriteTrackedSet} from "./class-trackers/set";
 import {WriteTrackedMap} from "./class-trackers/map";
+import {getTrackingConfigFor} from "./class-trackers/index";
 
 
 const objectsWithWriteTrackerInstalled = new WeakSet<object>();
-
-/**
- * Register them here
- */
-export const writeTrackerClasses: Set<Clazz> = new Set([WriteTrackedSet, WriteTrackedMap]);
-
-/**
- * Maps the original class to the watcher class
- */
-let cache_WriteTrackerClassMap: Map<Clazz, Clazz> | undefined;
-
-export function getWriteTrackerClassFor(obj: object) {
-    // lazy initialize
-    if(cache_WriteTrackerClassMap === undefined) {
-        cache_WriteTrackerClassMap = new Map([...writeTrackerClasses].map(wc => [Object.getPrototypeOf(wc) as any, wc]));
-    }
-
-    const clazz = obj.constructor as Clazz;
-    return cache_WriteTrackerClassMap.get(clazz);
-}
 
 export function objectHasWriteTrackerInstalled(obj: object) {
     return objectsWithWriteTrackerInstalled.has(obj);
@@ -45,14 +26,26 @@ export function installWriteTracker(obj: object) {
         return;
     }
 
-    let watcherClass = getWriteTrackerClassFor(obj);
-    if(watcherClass !== undefined) {
-        Object.setPrototypeOf(obj, watcherClass.prototype);
+    function inner() {
+        const trackingConfig = getTrackingConfigFor(obj);
+        if (trackingConfig) {
+            if (trackingConfig.trackSettingObjectProperties) {
+                // Achieve this with the ObjectProxyhandler. It will consider getTrackingConfigFor(obj).changeTracker itsself:
+                const proxy = new ObjectProxyHandler(obj, trackingConfig).proxy;
+                Object.setPrototypeOf(obj, proxy);
+                return;
+            }
+
+            if (trackingConfig.changeTracker !== undefined) {
+                Object.setPrototypeOf(obj, trackingConfig.changeTracker.prototype);
+            }
+        } else { // Non-special object ?
+            const proxy = new ObjectProxyHandler(obj, trackingConfig).proxy;
+            Object.setPrototypeOf(obj, proxy);
+        }
     }
-    else {
-        const proxy = new ObjectProxyHandler(obj, Array.isArray(obj)?WriteTrackedArray:undefined).proxy;
-        Object.setPrototypeOf(obj, proxy);
-    }
+    inner();
+
     objectsWithWriteTrackerInstalled.add(obj);
 }
 

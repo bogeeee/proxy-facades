@@ -4,14 +4,14 @@
 import {MapSet} from "./Util";
 import {
     AfterChangeOwnKeysListener,
-    AfterWriteListener,
+    AfterWriteListener, ClassTrackingConfiguration,
     getPropertyDescriptor,
     GetterFlags,
     ObjKey,
     runAndCallListenersOnce_after,
     SetterFlags,
-    WriteTrackerClass
 } from "./common";
+import {getTrackingConfigFor} from "./class-trackers/index";
 
 /**
  * Note for specificity: There will be only one of the **change** events fired. The Recorded...Read.onChange handler will add the listeners to all possible candidates. It's this way around.
@@ -52,14 +52,13 @@ export function getWriteListenersForObject(obj: object) {
 
 export class ObjectProxyHandler implements ProxyHandler<object> {
     target: object;
-    supervisorClass?: WriteTrackerClass
     origPrototype: object | null;
-
     proxy: object;
+    trackingConfig?: ClassTrackingConfiguration
 
-    constructor(target: object, supervisorClass?: WriteTrackerClass) {
+    constructor(target: object, trackingConfig: ClassTrackingConfiguration | undefined) {
         this.target = target;
-        this.supervisorClass = supervisorClass;
+        this.trackingConfig = trackingConfig;
         this.origPrototype = Object.getPrototypeOf(target);
 
 
@@ -157,25 +156,25 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
             throw new Error("Invalid state. Get was called on a different object than this write-tracker-proxy (which is set as the prototype) is for. Did you clone the object, resulting in shared prototypes?")
         }
 
-        // Check for and use supervisor class:
-        const supervisorClass = this.supervisorClass
-        if (supervisorClass !== undefined) {
-            let propOnSupervisor = Object.getOwnPropertyDescriptor(supervisorClass.prototype, key);
+        // Check for and use change tracker class:
+        const changeTrackerClass = this.trackingConfig?.changeTracker
+        if (changeTrackerClass !== undefined) {
+            let propOnSupervisor = Object.getOwnPropertyDescriptor(changeTrackerClass.prototype, key);
             if (propOnSupervisor !== undefined) { // Supervisor class is responsible for the property (or method) ?
                 //@ts-ignore
                 if (propOnSupervisor.get) { // Prop is a getter?
                     return propOnSupervisor.get.apply(target)
                 } else if (propOnSupervisor.value) { // Prop is a value, meaning a function. (Supervisors don't have fields)
-                    return supervisorClass.prototype[key];
+                    return changeTrackerClass.prototype[key];
                 }
             }
             else {
-                const origValue = supervisorClass.prototype[key]
+                const origValue = changeTrackerClass.prototype[key]
                 if(typeof origValue === "function") {
                     origMethod = origValue;
-                    if (supervisorClass.knownHighLevelMethods.has(key)) {
+                    if (this.trackingConfig?.knownHighLevelMethods.has(key)) {
                         return trapForHighLevelWriterMethod
-                    } else if (!supervisorClass.readOnlyMethods.has(key) && !(key as any in Object.prototype)) { // Read-write method that was not handled directly by supervisor class?
+                    } else if (!this.trackingConfig?.readOnlyMethods.has(key) && !(key as any in Object.prototype)) { // Read-write method that was not handled directly by change tracker class?
                         return trapForGenericWriterMethod // Assume the worst, that it is a writer method
                     }
                 }

@@ -30,7 +30,7 @@
     "clean": "tsc --build --clean && rimraf dist LICENSE readme.md",
     "build": "tsc --build --force && tsc -module ES6 --outDir dist/mjs",
     "test": "npm run clean && vitest --clearScreen --hideSkippedTests --poolOptions.threads.singleThread",
-    "test_specific": "npm run clean && vitest --clearScreen --hideSkippedTests --poolOptions.threads.singleThread --testNamePattern \"Arrays with Object.keys with .*push.* With writes from outside\"",
+    "test_specific": "npm run clean && vitest --clearScreen --hideSkippedTests --poolOptions.threads.singleThread --testNamePattern \"add.*should behave normally. With writes through installed write tracker\"",
     "prepublish": "npm run clean && npm run build",
     "publish:npmlogin": "npm login",
     "publish:publish": "npm run prepublish && npm publish"

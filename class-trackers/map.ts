@@ -1,5 +1,5 @@
 import {
-    AfterWriteListener,
+    AfterWriteListener, ClassTrackingConfiguration,
     DualUseTracker,
     ForWatchedProxyHandler,
     ObjKey,
@@ -41,27 +41,6 @@ export function getWriteListenersForMap(map: Map<unknown,unknown>) {
  */
 export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map<K,V>>{
 
-    /**
-     * Built-in Methods, which are using fields / calling methods on the proxy transparently/loyally, so those methods don't call/use internal stuff directly.
-     * Tested with, see dev_generateEsRuntimeBehaviourCheckerCode.ts
-     * May include read-only / reader methods
-     */
-    static knownHighLevelMethods = new Set<keyof Map<unknown,unknown>>([]) as Set<ObjKey>;
-
-    /**
-     * Non-high level
-     */
-    static readOnlyMethods = new Set<keyof Map<unknown,unknown>>([]) as Set<ObjKey>;
-
-    /**
-     * Non-high level
-     */
-    static readOnlyFields = new Set<keyof Map<unknown,unknown>>(["size"]) as Set<ObjKey>;
-
-    /**
-     * Default, if not listed as high-level method
-     */
-    static receiverMustBeNonProxied = true;
 
 
     protected _fireAfterUnspecificWrite() {
@@ -427,4 +406,31 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
 
         return result;
     }
+}
+
+export const config = new class extends ClassTrackingConfiguration {
+    readTracker= WatchedMap_for_WatchedProxyHandler;
+    changeTracker = WriteTrackedMap
+
+    /**
+     * Built-in Methods, which are using fields / calling methods on the proxy transparently/loyally, so those methods don't call/use internal stuff directly.
+     * Tested with, see dev_generateEsRuntimeBehaviourCheckerCode.ts
+     * May include read-only / reader methods
+     */
+    knownHighLevelMethods = new Set<keyof Map<unknown,unknown>>([]) as Set<ObjKey>;
+
+    /**
+     * Non-high level
+     */
+    readOnlyMethods = new Set<keyof Map<unknown,unknown>>([]) as Set<ObjKey>;
+
+    /**
+     * Non-high level
+     */
+    readOnlyFields = new Set<keyof Map<unknown,unknown>>(["size"]) as Set<ObjKey>;
+
+    /**
+     * Default, if not listed as high-level method
+     */
+    eceiverMustBeNonProxied = true;
 }

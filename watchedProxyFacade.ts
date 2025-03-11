@@ -14,12 +14,12 @@ import {
     RecordedRead,
     RecordedReadOnProxiedObject,
     runAndCallListenersOnce_after,
-    WriteTrackerClass
 } from "./common";
 import {getWriteListenersForObject, writeListenersForObject} from "./globalObjectWriteTracking";
 import _ from "underscore"
 import {WatchedSet_for_WatchedProxyHandler, WriteTrackedSet} from "./class-trackers/set";
 import {WatchedMap_for_WatchedProxyHandler, WriteTrackedMap} from "./class-trackers/map";
+import {getTrackingConfigFor} from "./class-trackers/index";
 
 
 /**
@@ -247,33 +247,13 @@ export class WatchedProxyFacade extends ProxyFacade<WatchedProxyHandler> {
 }
 
 export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> implements  IWatchedProxyHandler_common{
-    /**
-     * Classes for watchers / write-trackers
-     */
-    static supervisorClassesMap = new Map<Clazz, WatchedProxyHandler["supervisorClasses"]>([
-        [Array, {watcher: WatchedArray_for_WatchedProxyHandler, writeTracker: WriteTrackedArray}],
-        [Set, {watcher: WatchedSet_for_WatchedProxyHandler, writeTracker: WriteTrackedSet}],
-        [Map, {watcher: WatchedMap_for_WatchedProxyHandler, writeTracker: WriteTrackedMap}]
-    ]);
-    
-    /**
-     * "Serve" these classes's methods and property accessors.
-     */
-    supervisorClasses: {watcher: Clazz, writeTracker: WriteTrackerClass} | undefined
-
 
     constructor(target: object, facade: WatchedProxyFacade) {
         super(target, facade);
+    }
 
-        // determine watch and write- supervisorClasses:
-        for(const ClassToSupervise of WatchedProxyHandler.supervisorClassesMap.keys()) {
-            if(target instanceof ClassToSupervise) {
-                this.supervisorClasses = WatchedProxyHandler.supervisorClassesMap.get(ClassToSupervise);
-                if(target.constructor !== ClassToSupervise && target.constructor !== this.supervisorClasses!.writeTracker) {
-                    throw new Error(`Cannot create proxy of a **subclass** of ${ClassToSupervise.name} or ${this.supervisorClasses!.writeTracker.name}. It must be directly that class.`)
-                }
-            }
-        }
+    get trackingConfig() {
+        return getTrackingConfigFor(this.target); // TODO: cache (performance)
     }
 
     fireAfterRead(read: RecordedReadOnProxiedObject) {
@@ -286,7 +266,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
     get (fake_target:object, key:string | symbol, receiver:any) {
         const target = this.target;
         const thisHandler = this;
-        const receiverMustBeNonProxied = this.supervisorClasses?.writeTracker.receiverMustBeNonProxied;
+        const receiverMustBeNonProxied = this.trackingConfig?.receiverMustBeNonProxied === true;
 
         if(key === "_WatchedProxyHandler") { // TODO: use symbol for that (performance)
             return this;
@@ -296,9 +276,9 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
         }
 
         // Check for and use supervisor class:
-        if(this.supervisorClasses !== undefined) {
-            for(const SupervisorClass of [this.supervisorClasses.watcher, this.supervisorClasses.writeTracker]) {
-                let propOnSupervisor = Object.getOwnPropertyDescriptor(SupervisorClass.prototype, key);
+        if(this.trackingConfig !== undefined) {
+            for(const TrackerClass of this.trackingConfig.getTrackerClasses()) {
+                let propOnSupervisor = Object.getOwnPropertyDescriptor(TrackerClass.prototype, key);
                 if(propOnSupervisor !== undefined) { // Supervisor class is responsible for the property (or method) ?
                     //@ts-ignore
                     if(propOnSupervisor.get) { // Prop is a getter?
@@ -316,14 +296,14 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
                     }
                 }
             }
-            origMethod = this.supervisorClasses.writeTracker.prototype[key]
-            // When arriving here, the field is not **directly** in one of the supervisor classes
-            if(this.supervisorClasses.writeTracker.knownHighLevelMethods.has(key)) {
+            // When arriving here, the field is not **directly** in one of the tracker classes
+            origMethod = this.trackingConfig.changeTracker?.prototype[key] // TODO: shouldn't we use this.targe[key] instead ??? (as said, not from changeTracker?.prototype but more up in the prototype chain)
+            if(this.trackingConfig.knownHighLevelMethods.has(key)) {
                 return trapHighLevelReaderWriterMethod
             }
 
             if(typeof origMethod === "function" && !(key as any in Object.prototype)) { // Read+write method that was not handled directly by supervisor class?
-                if(this.supervisorClasses.writeTracker.readOnlyMethods.has(key)) {
+                if(this.trackingConfig.readOnlyMethods.has(key)) {
                     return trapForGenericReaderMethod
                 }
                 else {

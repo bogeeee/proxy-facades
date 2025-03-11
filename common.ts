@@ -103,9 +103,6 @@ export function runAndCallListenersOnce_after<R>(forTarget: object, collectorFn:
         }
     }
 }
-
-export type WriteTrackerClass = Clazz & {knownHighLevelMethods: Set<ObjKey>, readOnlyMethods: Set<ObjKey>, readOnlyFields: Set<ObjKey>, receiverMustBeNonProxied: boolean};
-
 let esRuntimeBehaviourAlreadyChecked = false;
 
 export function checkEsRuntimeBehaviour() {
@@ -183,7 +180,52 @@ export interface ForWatchedProxyHandler<T> extends DualUseTracker<T> {
     get _target(): T
 }
 
+/**
+ * Configures tracking behaviour for a certain class
+ */
+export class ClassTrackingConfiguration {
+    readTracker?: Clazz;
+    changeTracker?: Clazz;
+    /**
+     * Built-in Methods, which are using fields / calling methods on the proxy transparently/loyally, so those methods don't call/use internal stuff directly.
+     * Tested with, see dev_generateEsRuntimeBehaviourCheckerCode.ts
+     * May include read-only / reader methods
+     */
+    knownHighLevelMethods = new Set<ObjKey>();
+    /**
+     * Non-high level. These fire `RecordedUnspecificRead`s then. So better implement them instead to fire i.e RecordedArrayValuesRead.
+     */
+    readOnlyMethods = new  Set<ObjKey>();
 
+    /**
+     * Non-high level. Same as above: better implement them
+     */
+    readOnlyFields = new Set<ObjKey>();
+
+    /**
+     * Default, if not listed as high-level method
+     */
+    receiverMustBeNonProxied=true;
+
+    /**
+     * (For Array:) Flags to track setting properties, meaning changes are not only done by calling methods. This will use a Proxy (install a Proxy as Prototype).
+     */
+    trackSettingObjectProperties=false;
+
+    /**
+     * Lists read and writeTracker as far as they're present
+     */
+    getTrackerClasses(): Clazz[] {
+        const result = [];
+        if(this.readTracker !== undefined) {
+            result.push(this.readTracker);
+        }
+        if(this.changeTracker !== undefined) {
+            result.push(this.changeTracker);
+        }
+        return result;
+    }
+}
 
 export function recordedReadsArraysAreEqual(a: RecordedRead[], b: RecordedRead[]) {
     return arraysAreEqualsByPredicateFn(a, b, (a, b) => a.equals(b));
