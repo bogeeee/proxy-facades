@@ -9,7 +9,7 @@ import {
 import _ from "underscore"
 import {arraysAreEqualsByPredicateFn, isObject, visitReplace} from "./Util";
 import {Clazz, ObjKey} from "./common";
-import {deleteProperty, enhanceWithWriteTracker} from "./globalWriteTracking";
+import {deleteProperty, installWriteTracker} from "./globalWriteTracking";
 import {ProxyFacade} from "./proxyFacade";
 import exp from "constants";
 import {fail} from "assert";
@@ -173,14 +173,14 @@ describe('ProxyFacade tests', () => {
     // TODO: Array, Set and Map's Iterators, keys(), values(), etc. methods must return proxied objects as well
 });
 
-describe('ProxyFacade and direct enhancement tests', () => {
+describe('ProxyFacade and installed write tracker tests', () => {
     for (const mode of [{
         name: "ProxyFacade", proxyOrEnhance<T extends object>(o: T) {
             return new WatchedProxyFacade().getProxyFor(o)
         }
     }, {
-        name: "Direct enhancement", proxyOrEnhance<T extends object>(o: T) {
-            enhanceWithWriteTracker(o);
+        name: "Installed write tracker", proxyOrEnhance<T extends object>(o: T) {
+            installWriteTracker(o);
             return o;
         }
     }]) {
@@ -339,7 +339,7 @@ describe('ProxyFacade and direct enhancement tests', () => {
         } )
 
         /*
-        // Not possible with enhancement
+        // Not possible with installed write tracker
         test(`${mode.name}: Prototype should be the same`, () => {
             const orig:any = {a: "x", counter: 0}
             const protoOrig = Object.getPrototypeOf(orig);
@@ -1363,7 +1363,7 @@ function fnToString(fn: (...args: any[]) => unknown) {
 function enhanceWithWriteTrackerDeep(obj: object) {
     visitReplace(obj, (value, visitChilds, context) => {
         if(isObject(value)) {
-            enhanceWithWriteTracker(value);
+            installWriteTracker(value);
         }
         return visitChilds(value, context)
     })

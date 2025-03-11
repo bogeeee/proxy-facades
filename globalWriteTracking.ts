@@ -10,7 +10,7 @@ import {WriteTrackedSet} from "./globalSetWriteTracking";
 import {WriteTrackedMap} from "./globalMapWriteTracking";
 
 
-const enhancedObjects = new WeakSet<object>();
+const objectsWithWriteTrackerInstalled = new WeakSet<object>();
 
 /**
  * Register them here
@@ -32,16 +32,16 @@ export function getWriteTrackerClassFor(obj: object) {
     return cache_WriteTrackerClassMap.get(clazz);
 }
 
-export function objectIsEnhancedWithWriteTracker(obj: object) {
-    return enhancedObjects.has(obj);
+export function objectHasWriteTrackerInstalled(obj: object) {
+    return objectsWithWriteTrackerInstalled.has(obj);
 }
 
 /**
  *
  * @param obj
  */
-export function enhanceWithWriteTracker(obj: object) {
-    if(objectIsEnhancedWithWriteTracker(obj)) {
+export function installWriteTracker(obj: object) {
+    if(objectHasWriteTrackerInstalled(obj)) {
         return;
     }
 
@@ -53,16 +53,16 @@ export function enhanceWithWriteTracker(obj: object) {
         const proxy = new ObjectProxyHandler(obj, Array.isArray(obj)?WriteTrackedArray:undefined).proxy;
         Object.setPrototypeOf(obj, proxy);
     }
-    enhancedObjects.add(obj);
+    objectsWithWriteTrackerInstalled.add(obj);
 }
 
 /**
- * Use this to delete properties of enhanced objects. Otherwise they are not deletable and the write tracker cannot track the object's keys modification and inform listeners
+ * Use this to delete properties on objects that have a write tracker installer. Otherwise they are not deletable and the write tracker cannot track the object's keys modification and inform listeners
  * @param obj
  * @param key
  */
 export function deleteProperty<O extends object>(obj: O, key: keyof O) {
-    if(!objectIsEnhancedWithWriteTracker(obj)) {
+    if(!objectHasWriteTrackerInstalled(obj)) {
         return delete obj[key];
     }
 

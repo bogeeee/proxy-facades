@@ -6,9 +6,9 @@ import {
     MapSet, throwError
 } from "./Util";
 import {
-    enhanceWithWriteTracker,
+    installWriteTracker,
     getWriteTrackerClassFor,
-    objectIsEnhancedWithWriteTracker
+    objectHasWriteTrackerInstalled
 } from "./globalWriteTracking";
 import {getWriteListenersForArray, writeListenersForArray, WriteTrackedArray} from "./globalArrayWriteTracking";
 import {
@@ -98,7 +98,7 @@ export class RecordedPropertyRead extends RecordedReadOnProxiedObject{
 
     onChange(listener: () => void, trackOriginal=false) {
         if(trackOriginal) {
-            enhanceWithWriteTracker(this.obj); // Performance TODO: Install a setter trap ONLY for the property of interest. See ObjectProxyHandler#installSetterTrap
+            installWriteTracker(this.obj); // Performance TODO: Install a setter trap ONLY for the property of interest. See ObjectProxyHandler#installSetterTrap
         }
         getWriteListenersForObject(this.obj).afterChangeSpecificProperty_listeners.add(this.key, listener);
         if(Array.isArray(this.obj)) {
@@ -138,7 +138,7 @@ export class RecordedOwnKeysRead extends RecordedReadOnProxiedObject{
 
     onChange(listener: AfterChangeOwnKeysListener, trackOriginal=false) {
         if(trackOriginal) {
-            enhanceWithWriteTracker(this.obj);
+            installWriteTracker(this.obj);
         }
         getWriteListenersForObject(this.obj).afterChangeOwnKeys_listeners.add(listener);
         if(Array.isArray(this.obj)) {
@@ -172,7 +172,7 @@ export class RecordedUnspecificRead extends RecordedReadOnProxiedObject{
 
     onChange(listener: () => void, trackOriginal=false) {
         if(trackOriginal) {
-            enhanceWithWriteTracker(this.obj);
+            installWriteTracker(this.obj);
         }
         getWriteListenersForObject(this.obj).afterAnyWrite_listeners.add(listener);
     }
@@ -201,7 +201,7 @@ export class RecordedArrayValuesRead extends RecordedReadOnProxiedObject {
 
     onChange(listener: () => void, trackOriginal =false) {
         if(trackOriginal) {
-            enhanceWithWriteTracker(this.origObj);
+            installWriteTracker(this.origObj);
         }
         getWriteListenersForObject(this.origObj).afterChangeOwnKeys_listeners.add(listener);
         getWriteListenersForObject(this.origObj).afterChangeAnyProperty_listeners.add(listener);
@@ -250,7 +250,7 @@ export class RecordedSet_has extends RecordedReadOnProxiedObject {
 
     onChange(listener: () => void, trackOriginal=false) {
         if(trackOriginal) {
-            enhanceWithWriteTracker(this.obj);
+            installWriteTracker(this.obj);
         }
         getWriteListenersForSet(this.obj).afterSpecificValueChanged.add(this.value, listener);
         getWriteListenersForObject(this.obj).afterUnspecificWrite.add(listener);
@@ -286,7 +286,7 @@ export class RecordedSetValuesRead extends RecordedReadOnProxiedObject {
 
     onChange(listener: () => void, trackOriginal =false) {
         if(trackOriginal) {
-            enhanceWithWriteTracker(this.origObj);
+            installWriteTracker(this.origObj);
         }
         getWriteListenersForSet(this.origObj).afterAnyValueChanged.add(listener);
         getWriteListenersForObject(this.origObj).afterUnspecificWrite.add(listener);
@@ -334,7 +334,7 @@ export class RecordedMap_get extends RecordedReadOnProxiedObject {
 
     onChange(listener: () => void, trackOriginal=false) {
         if(trackOriginal) {
-            enhanceWithWriteTracker(this.obj);
+            installWriteTracker(this.obj);
         }
         getWriteListenersForMap(this.obj).afterSpecificKeyAddedOrRemoved.add(this.key, listener);
         getWriteListenersForMap(this.obj).afterSpecificValueChanged.add(this.key, listener);
@@ -378,7 +378,7 @@ export class RecordedMap_has extends RecordedReadOnProxiedObject {
 
     onChange(listener: () => void, trackOriginal=false) {
         if(trackOriginal) {
-            enhanceWithWriteTracker(this.obj);
+            installWriteTracker(this.obj);
         }
         getWriteListenersForMap(this.obj).afterSpecificKeyAddedOrRemoved.add(this.key, listener);
         getWriteListenersForObject(this.obj).afterUnspecificWrite.add(listener);
@@ -413,7 +413,7 @@ export class RecordedMapKeysRead extends RecordedReadOnProxiedObject {
 
     onChange(listener: () => void, trackOriginal =false) {
         if(trackOriginal) {
-            enhanceWithWriteTracker(this.origObj);
+            installWriteTracker(this.origObj);
         }
         getWriteListenersForMap(this.origObj).afterAnyKeyAddedOrRemoved.add(listener);
         getWriteListenersForObject(this.origObj).afterUnspecificWrite.add(listener);
@@ -452,7 +452,7 @@ export class RecordedMapValuesRead extends RecordedReadOnProxiedObject {
 
     onChange(listener: () => void, trackOriginal =false) {
         if(trackOriginal) {
-            enhanceWithWriteTracker(this.origObj);
+            installWriteTracker(this.origObj);
         }
         getWriteListenersForMap(this.origObj).afterAnyValueChanged.add(listener);
         getWriteListenersForObject(this.origObj).afterUnspecificWrite.add(listener);
@@ -491,7 +491,7 @@ export class RecordedMapEntriesRead extends RecordedReadOnProxiedObject {
 
     onChange(listener: () => void, trackOriginal =false) {
         if(trackOriginal) {
-            enhanceWithWriteTracker(this.origObj);
+            installWriteTracker(this.origObj);
         }
         getWriteListenersForMap(this.origObj).afterAnyKeyAddedOrRemoved.add(listener);
         getWriteListenersForMap(this.origObj).afterAnyValueChanged.add(listener);
@@ -998,7 +998,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
         runAndCallListenersOnce_after(this.target, (callListeners) => {
             const isNewProperty = getPropertyDescriptor(this.target, key) === undefined;
             super.rawChange(key, newUnproxiedValue);
-            if(!objectIsEnhancedWithWriteTracker(this.target)) { // Listeners were not already called ?
+            if(!objectHasWriteTrackerInstalled(this.target)) { // Listeners were not already called ?
                 if(this.isForArray()) {
                     callListeners(writeListenersForObject.get(this.target)?.afterUnspecificWrite);
                 }
@@ -1022,7 +1022,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
             }
             const result = super.deleteProperty(target, key);
             if (doesExists) {
-                if (!objectIsEnhancedWithWriteTracker(this.target)) { // Listeners were not already called ?
+                if (!objectHasWriteTrackerInstalled(this.target)) { // Listeners were not already called ?
                     callListeners(writeListenersForObject.get(this.target)?.afterChangeOwnKeys_listeners);
                     callListeners(writeListenersForObject.get(this.target)?.afterAnyWrite_listeners);
                 }
