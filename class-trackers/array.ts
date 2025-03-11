@@ -1,6 +1,6 @@
-import {AfterWriteListener, DualUseTracker, ObjKey, runAndCallListenersOnce_after} from "./common";
-import {throwError} from "./Util";
-import {writeListenersForObject} from "./globalObjectWriteTracking";
+import {AfterWriteListener, DualUseTracker, ObjKey, runAndCallListenersOnce_after} from "../common";
+import {throwError} from "../Util";
+import {writeListenersForObject} from "../globalObjectWriteTracking";
 
 
 /**

@@ -3,11 +3,11 @@
 
 import {RecordedReadOnProxiedObject, WatchedProxyHandler} from "./watchedProxyFacade";
 import {MapSet} from "./Util";
-import {WriteTrackedArray} from "./globalArrayWriteTracking";
+import {WriteTrackedArray} from "./class-trackers/array";
 import {AfterWriteListener, Clazz, ObjKey, runAndCallListenersOnce_after} from "./common";
 import {ObjectProxyHandler, writeListenersForObject} from "./globalObjectWriteTracking";
-import {WriteTrackedSet} from "./globalSetWriteTracking";
-import {WriteTrackedMap} from "./globalMapWriteTracking";
+import {WriteTrackedSet} from "./class-trackers/set";
+import {WriteTrackedMap} from "./class-trackers/map";
 
 
 const objectsWithWriteTrackerInstalled = new WeakSet<object>();

@@ -10,7 +10,7 @@ import {
     getWriteTrackerClassFor,
     objectHasWriteTrackerInstalled
 } from "./globalWriteTracking";
-import {getWriteListenersForArray, writeListenersForArray, WriteTrackedArray} from "./globalArrayWriteTracking";
+import {getWriteListenersForArray, writeListenersForArray, WriteTrackedArray} from "./class-trackers/array";
 import {
     AfterChangeOwnKeysListener,
     AfterReadListener,
@@ -21,8 +21,8 @@ import {
 } from "./common";
 import {getWriteListenersForObject, writeListenersForObject} from "./globalObjectWriteTracking";
 import _ from "underscore"
-import {getWriteListenersForSet, writeListenersForSet, WriteTrackedSet} from "./globalSetWriteTracking";
-import {getWriteListenersForMap, writeListenersForMap, WriteTrackedMap} from "./globalMapWriteTracking";
+import {getWriteListenersForSet, writeListenersForSet, WriteTrackedSet} from "./class-trackers/set";
+import {getWriteListenersForMap, writeListenersForMap, WriteTrackedMap} from "./class-trackers/map";
 
 
 export abstract class RecordedRead {
