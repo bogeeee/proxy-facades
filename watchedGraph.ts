@@ -1,4 +1,4 @@
-import {GraphProxyHandler, ProxiedGraph} from "./proxiedGraph";
+import {GraphProxyHandler, ProxyFacade} from "./proxyFacade";
 import {
     arraysAreEqualsByPredicateFn,
     arraysAreShallowlyEqual,
@@ -527,7 +527,7 @@ export function recordedReadsArraysAreEqual(a: RecordedRead[], b: RecordedRead[]
  * - record read + watch recorded for modifications. For re-render trigger
  * - record read and make several snapshots (when load is called) and compare exactly those reads
  */
-export class WatchedGraph extends ProxiedGraph<WatchedGraphHandler> {
+export class WatchedGraph extends ProxyFacade<WatchedGraphHandler> {
     // ** Configuration**
     /**
      * Watches also writes that are not made through a proxy of this WatchedGraph by installing a setter (property accessor) on each of the desired properties

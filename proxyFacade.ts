@@ -4,7 +4,7 @@
 import {getPropertyDescriptor, GetterFlags, ObjKey, SetterFlags} from "./common";
 import {deleteProperty} from "./globalWriteTracking";
 
-export abstract class ProxiedGraph<HANDLER extends GraphProxyHandler<any>> {
+export abstract class ProxyFacade<HANDLER extends GraphProxyHandler<any>> {
     // *** Configuration: ***
     /**
      * Treats them like functions, meaning, they get a proxied 'this'. WatchProxies will see the access to the real properties
@@ -64,7 +64,7 @@ export abstract class ProxiedGraph<HANDLER extends GraphProxyHandler<any>> {
 
 }
 
-export abstract class GraphProxyHandler<GRAPH extends ProxiedGraph<any>> implements ProxyHandler<object> {
+export abstract class GraphProxyHandler<GRAPH extends ProxyFacade<any>> implements ProxyHandler<object> {
     target: object;
     proxy: object;
     graph: GRAPH;

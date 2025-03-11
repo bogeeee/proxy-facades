@@ -10,7 +10,7 @@ import _ from "underscore"
 import {arraysAreEqualsByPredicateFn, isObject, visitReplace} from "./Util";
 import {Clazz, ObjKey} from "./common";
 import {deleteProperty, enhanceWithWriteTracker} from "./globalWriteTracking";
-import {ProxiedGraph} from "./proxiedGraph";
+import {ProxyFacade} from "./proxyFacade";
 import exp from "constants";
 import {fail} from "assert";
 
@@ -27,7 +27,7 @@ function createSampleObjectGraph() {
 }
 
 
-describe('ProxiedGraph tests', () => {
+describe('ProxyFacade tests', () => {
     test("Base implementation", () => {
         const sampleGraph = createSampleObjectGraph();
         let watchedGraph = new WatchedGraph();
@@ -173,9 +173,9 @@ describe('ProxiedGraph tests', () => {
     // TODO: Array, Set and Map's Iterators, keys(), values(), etc. methods must return proxied objects as well
 });
 
-describe('ProxiedGraph and direct enhancement tests', () => {
+describe('ProxyFacade and direct enhancement tests', () => {
     for (const mode of [{
-        name: "ProxiedGraph", proxyOrEnhance<T extends object>(o: T) {
+        name: "ProxyFacade", proxyOrEnhance<T extends object>(o: T) {
             return new WatchedGraph().getProxyFor(o)
         }
     }, {
