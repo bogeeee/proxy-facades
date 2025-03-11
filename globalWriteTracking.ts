@@ -1,10 +1,10 @@
 // This file has functions / classes that allow to watch writes to objects (or arrays/sets/maps) **without proxies**
 
 
-import {RecordedReadOnProxiedObject, WatchedProxyHandler} from "./watchedProxyFacade";
+import {WatchedProxyHandler} from "./watchedProxyFacade";
 import {MapSet} from "./Util";
 import {WriteTrackedArray} from "./class-trackers/array";
-import {AfterWriteListener, Clazz, ObjKey, runAndCallListenersOnce_after} from "./common";
+import {AfterWriteListener, Clazz, ObjKey, RecordedReadOnProxiedObject, runAndCallListenersOnce_after} from "./common";
 import {ObjectProxyHandler, writeListenersForObject} from "./globalObjectWriteTracking";
 import {WriteTrackedSet} from "./class-trackers/set";
 import {WriteTrackedMap} from "./class-trackers/map";

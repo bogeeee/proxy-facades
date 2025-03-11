@@ -3,42 +3,29 @@ import {
     arraysAreEqualsByPredicateFn,
     arraysAreShallowlyEqual,
     arraysWithEntriesAreShallowlyEqual,
-    MapSet, throwError
+    throwError
 } from "./Util";
-import {
-    installWriteTracker,
-    getWriteTrackerClassFor,
-    objectHasWriteTrackerInstalled
-} from "./globalWriteTracking";
-import {getWriteListenersForArray, writeListenersForArray, WriteTrackedArray} from "./class-trackers/array";
+import {installWriteTracker, objectHasWriteTrackerInstalled} from "./globalWriteTracking";
+import {WriteTrackedArray} from "./class-trackers/array";
 import {
     AfterChangeOwnKeysListener,
     AfterReadListener,
     AfterWriteListener,
+    checkEsRuntimeBehaviour,
     Clazz,
-    DualUseTracker, getPropertyDescriptor, runAndCallListenersOnce_after,
-    ObjKey, WriteTrackerClass, checkEsRuntimeBehaviour
+    ForWatchedProxyHandler,
+    getPropertyDescriptor,
+    ObjKey,
+    RecordedRead,
+    RecordedReadOnProxiedObject,
+    runAndCallListenersOnce_after,
+    WriteTrackerClass
 } from "./common";
 import {getWriteListenersForObject, writeListenersForObject} from "./globalObjectWriteTracking";
 import _ from "underscore"
 import {getWriteListenersForSet, writeListenersForSet, WriteTrackedSet} from "./class-trackers/set";
 import {getWriteListenersForMap, writeListenersForMap, WriteTrackedMap} from "./class-trackers/map";
 
-
-export abstract class RecordedRead {
-    abstract equals(other: RecordedRead): boolean;
-
-    abstract get isChanged(): boolean;
-
-    /**
-     *
-     * @param listener
-     * @param trackOriginal true to install a tracker on the non-proxied (by this facade) original object
-     */
-    abstract onChange(listener: () => void, trackOriginal?: boolean): void;
-
-    abstract offChange(listener: () => void): void;
-}
 
 /**
  * Access a single value (=variable or return value from a function)
@@ -70,14 +57,6 @@ export class RecordedValueRead extends RecordedRead{
 
         return this.value === other.value;
     }
-}
-
-export abstract class RecordedReadOnProxiedObject extends RecordedRead {
-    proxyHandler!: WatchedProxyHandler
-    /**
-     * A bit redundant with proxyhandler. But for performance reasons, we leave it
-     */
-    obj!: object;
 }
 
 export class RecordedPropertyRead extends RecordedReadOnProxiedObject{
@@ -605,18 +584,6 @@ export class WatchedProxyFacade extends ProxyFacade<WatchedProxyHandler> {
     protected crateHandler(target: object, facade: any): WatchedProxyHandler {
         return new WatchedProxyHandler(target, facade);
     }
-}
-
-export interface ForWatchedProxyHandler<T> extends DualUseTracker<T> {
-    /**
-     * Will return the handler when called through the handler
-     */
-    get _WatchedProxyHandler(): WatchedProxyHandler;
-
-    /**
-     * The original (unproxied) object
-     */
-    get _target(): T
 }
 
 /**

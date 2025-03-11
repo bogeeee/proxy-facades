@@ -1,7 +1,31 @@
-import {RecordedRead} from "./watchedProxyFacade";
-import {throwError, read} from "./Util";
+import {WatchedProxyHandler} from "./watchedProxyFacade";
+import {read, throwError} from "./Util";
 
 export type ObjKey = string | symbol;
+
+export abstract class RecordedRead {
+    abstract equals(other: RecordedRead): boolean;
+
+    abstract get isChanged(): boolean;
+
+    /**
+     *
+     * @param listener
+     * @param trackOriginal true to install a tracker on the non-proxied (by this facade) original object
+     */
+    abstract onChange(listener: () => void, trackOriginal?: boolean): void;
+
+    abstract offChange(listener: () => void): void;
+}
+
+export abstract class RecordedReadOnProxiedObject extends RecordedRead {
+    proxyHandler!: WatchedProxyHandler
+    /**
+     * A bit redundant with proxyhandler. But for performance reasons, we leave it
+     */
+    obj!: object;
+}
+
 export type AfterReadListener = (read: RecordedRead) => void;
 export type AfterWriteListener = () => void;
 export type AfterChangeOwnKeysListener = () => void;
@@ -137,4 +161,16 @@ export function checkEsRuntimeBehaviour() {
         !expectedMethodsOrFields.some(mf => mf !== "constructor" && !usedMethodsOrFields.has(mf)) || throwError(new Error(`The javascript runtime is not behaving as expected. Please report this as a bug along with your javascript runtime (or Browser) version`))
     }
     esRuntimeBehaviourAlreadyChecked = true;
+}
+
+export interface ForWatchedProxyHandler<T> extends DualUseTracker<T> {
+    /**
+     * Will return the handler when called through the handler
+     */
+    get _WatchedProxyHandler(): WatchedProxyHandler;
+
+    /**
+     * The original (unproxied) object
+     */
+    get _target(): T
 }

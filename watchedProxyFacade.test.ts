@@ -2,13 +2,12 @@ import {it, expect, test, beforeEach,describe, vitest, vi} from 'vitest'
 import {
     RecordedArrayValuesRead,
     RecordedPropertyRead,
-    RecordedRead,
     recordedReadsArraysAreEqual,
     WatchedProxyFacade
 } from "./watchedProxyFacade";
 import _ from "underscore"
 import {arraysAreEqualsByPredicateFn, isObject, visitReplace} from "./Util";
-import {Clazz, ObjKey} from "./common";
+import {Clazz, ObjKey, RecordedRead} from "./common";
 import {deleteProperty, installWriteTracker} from "./globalWriteTracking";
 import {ProxyFacade} from "./proxyFacade";
 import exp from "constants";
