@@ -531,7 +531,7 @@ export class WatchedProxyFacade extends ProxyFacade<WatchedProxyHandler> {
     // ** Configuration**
     /**
      * Watches also writes that are not made through a proxy of this WatchedProxyFacade by installing a setter (property accessor) on each of the desired properties
-     * Works only for **individual** properties which you are explicitly listening on, and not on the whole Graph.
+     * Works only for **individual** properties which you are explicitly listening on, and not on the whole Facade.
      * See {@link onAfterWrite} for the listener
      *
      */
@@ -542,13 +542,13 @@ export class WatchedProxyFacade extends ProxyFacade<WatchedProxyHandler> {
     // *** State: ****
 
     /**
-     * Called after a read has been made to any object inside this graph
+     * Called after a read has been made to any object inside this facade
      * @protected
      */
     _afterReadListeners = new Set<AfterReadListener>()
 
     /**
-     * Called after a write has been made to any object inside this graph
+     * Called after a write has been made to any object inside this facade
      * Note: There are also listeners for specified properties (which are more capable)
      * TODO: Do we need this ?
      * @protected
@@ -602,8 +602,8 @@ export class WatchedProxyFacade extends ProxyFacade<WatchedProxyHandler> {
         }
     }
 
-    protected crateHandler(target: object, graph: any): WatchedProxyHandler {
-        return new WatchedProxyHandler(target, graph);
+    protected crateHandler(target: object, facade: any): WatchedProxyHandler {
+        return new WatchedProxyHandler(target, facade);
     }
 }
 
@@ -877,8 +877,8 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
     supervisorClasses: {watcher: Clazz, writeTracker: WriteTrackerClass} | undefined
 
 
-    constructor(target: object, graph: WatchedProxyFacade) {
-        super(target, graph);
+    constructor(target: object, facade: WatchedProxyFacade) {
+        super(target, facade);
 
         // determine watch and write- supervisorClasses:
         for(const ClassToSupervise of WatchedProxyHandler.supervisorClassesMap.keys()) {
@@ -895,7 +895,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
         read.proxyHandler = this;
         read.obj = this.target;
 
-        this.graph._afterReadListeners.forEach(l => l(read)); // Inform listeners
+        this.facade._afterReadListeners.forEach(l => l(read)); // Inform listeners
     }
 
     get (fake_target:object, key:string | symbol, receiver:any) {
@@ -917,7 +917,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
                 if(propOnSupervisor !== undefined) { // Supervisor class is responsible for the property (or method) ?
                     //@ts-ignore
                     if(propOnSupervisor.get) { // Prop is a getter?
-                        return this.graph.getProxyFor(this.graph.getProxyFor(propOnSupervisor.get.apply(this.proxy)));
+                        return this.facade.getProxyFor(this.facade.getProxyFor(propOnSupervisor.get.apply(this.proxy)));
                     }
                     if(propOnSupervisor.set) { // Prop is a setter ?
                         throw new Error("setters not yet implemented")
@@ -926,7 +926,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
                         typeof propOnSupervisor.value === "function" || throwError(`Accessing supervisor's plain property: ${String(key)}`); // validity check
                         const supervisorMethod = propOnSupervisor.value;
                         return function withProxiedResult(this:unknown, ...args: unknown[]) {
-                            return thisHandler.graph.getProxyFor(supervisorMethod.apply(this, args)); // Call and wrap result in a proxy
+                            return thisHandler.facade.getProxyFor(supervisorMethod.apply(this, args)); // Call and wrap result in a proxy
                         }
                     }
                 }
@@ -985,7 +985,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
 
     rawRead(key: ObjKey) {
         const result = super.rawRead(key);
-        if(!this.graph.trackReadsOnPrototype) {
+        if(!this.facade.trackReadsOnPrototype) {
             if(Object.getOwnPropertyDescriptor(this.target, key) === undefined && getPropertyDescriptor(this.target,key ) !== undefined) { // Property is on prototype only ?
                 return result;
             }

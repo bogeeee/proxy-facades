@@ -15,7 +15,7 @@ export abstract class ProxyFacade<HANDLER extends FacadeProxyHandler<any>> {
     protected proxies = new WeakSet<object>();
     protected objectsToProxyHandlers = new WeakMap<object, HANDLER>();
 
-    protected abstract crateHandler(target: object, graph: any): HANDLER;
+    protected abstract crateHandler(target: object, facade: any): HANDLER;
 
     getProxyFor<O>(value: O): O {
         if(value === null || typeof value !== "object") { // not an object?
@@ -64,14 +64,14 @@ export abstract class ProxyFacade<HANDLER extends FacadeProxyHandler<any>> {
 
 }
 
-export abstract class FacadeProxyHandler<GRAPH extends ProxyFacade<any>> implements ProxyHandler<object> {
+export abstract class FacadeProxyHandler<FACADE extends ProxyFacade<any>> implements ProxyHandler<object> {
     target: object;
     proxy: object;
-    graph: GRAPH;
+    facade: FACADE;
 
-    constructor(target: object, graph: GRAPH) {
+    constructor(target: object, facade: FACADE) {
         this.target = target;
-        this.graph = graph;
+        this.facade = facade;
 
         // Create proxy:
         //const targetForProxy = {}; // The virtual way
@@ -96,7 +96,7 @@ export abstract class FacadeProxyHandler<GRAPH extends ProxyFacade<any>> impleme
 
         const getter = getPropertyDescriptor(this.target, p)?.get;
         let value;
-        if(this.graph.propertyAccessorsAsWhiteBox && getter !== undefined && (getter as GetterFlags).origHadGetter !== false) { // Access via real property accessor ?
+        if(this.facade.propertyAccessorsAsWhiteBox && getter !== undefined && (getter as GetterFlags).origHadGetter !== false) { // Access via real property accessor ?
             return value = getter.apply(this.proxy,[]); // Call the accessor with a proxied this
         }
         else {
@@ -113,7 +113,7 @@ export abstract class FacadeProxyHandler<GRAPH extends ProxyFacade<any>> impleme
                 throw new Error("Cannot proxy a read-only property. This is not implemented."); // TODO: Implement the virtual way (see constructor)
             }
 
-            return this.graph.getProxyFor(value);
+            return this.facade.getProxyFor(value);
         }
 
         return value;
@@ -131,11 +131,11 @@ export abstract class FacadeProxyHandler<GRAPH extends ProxyFacade<any>> impleme
         }
 
         const setter = getPropertyDescriptor(this.target, p)?.set;
-        if(this.graph.propertyAccessorsAsWhiteBox && setter !== undefined && (setter as SetterFlags).origHadSetter !== false) { // Setting via real property accessor ?
+        if(this.facade.propertyAccessorsAsWhiteBox && setter !== undefined && (setter as SetterFlags).origHadSetter !== false) { // Setting via real property accessor ?
             setter.apply(this.proxy,[value]); // Only call the accessor with a proxied this
         }
         else {
-            const unproxiedValue = this.graph.getUnproxiedValue(value);
+            const unproxiedValue = this.facade.getUnproxiedValue(value);
             //@ts-ignore
             if (this.target[p] !== unproxiedValue) { // modify ?
                 this.rawChange(p, unproxiedValue);
