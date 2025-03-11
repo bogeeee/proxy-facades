@@ -1,4 +1,4 @@
-import {GraphProxyHandler, ProxyFacade} from "./proxyFacade";
+import {FacadeProxyHandler, ProxyFacade} from "./proxyFacade";
 import {
     arraysAreEqualsByPredicateFn,
     arraysAreShallowlyEqual,
@@ -861,7 +861,7 @@ class WatchedMap_for_WatchedGraphHandler<K,V> extends Map<K, V> implements ForWa
     }
 }
 
-export class WatchedGraphHandler extends GraphProxyHandler<WatchedGraph> {
+export class WatchedGraphHandler extends FacadeProxyHandler<WatchedGraph> {
     /**
      * Classes for watchers / write-trackers
      */
