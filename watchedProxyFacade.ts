@@ -42,7 +42,7 @@ export abstract class RecordedRead {
 
 /**
  * Access a single value (=variable or return value from a function)
- * This read is can only be constructed manually (not through a WatchedGraph / WatchedProxyHandler
+ * This read is can only be constructed manually (not through a WatchedProxyFacade / WatchedProxyHandler
  */
 export class RecordedValueRead extends RecordedRead{
     value: unknown;
@@ -527,10 +527,10 @@ export function recordedReadsArraysAreEqual(a: RecordedRead[], b: RecordedRead[]
  * - record read + watch recorded for modifications. For re-render trigger
  * - record read and make several snapshots (when load is called) and compare exactly those reads
  */
-export class WatchedGraph extends ProxyFacade<WatchedProxyHandler> {
+export class WatchedProxyFacade extends ProxyFacade<WatchedProxyHandler> {
     // ** Configuration**
     /**
-     * Watches also writes that are not made through a proxy of this WatchedGraph by installing a setter (property accessor) on each of the desired properties
+     * Watches also writes that are not made through a proxy of this WatchedProxyFacade by installing a setter (property accessor) on each of the desired properties
      * Works only for **individual** properties which you are explicitly listening on, and not on the whole Graph.
      * See {@link onAfterWrite} for the listener
      *
@@ -571,7 +571,7 @@ export class WatchedGraph extends ProxyFacade<WatchedProxyHandler> {
 
     /**
      * Watches for writes on a specified property
-     * @deprecated Watching is global and not bound to this WatchedGraph
+     * @deprecated Watching is global and not bound to this WatchedProxyFacade
      * @param obj
      * @param key Not restricted here (for the tests), but it must not be number !
      * @param listener
@@ -588,7 +588,7 @@ export class WatchedGraph extends ProxyFacade<WatchedProxyHandler> {
 
     /**
      * Watches for writes on a specified property
-     * @deprecated Watching is global and not bound to this WatchedGraph
+     * @deprecated Watching is global and not bound to this WatchedProxyFacade
      * @param obj
      * @param key Not restricted here (for the tests), but it must not be number !
      * @param listener
@@ -861,7 +861,7 @@ class WatchedMap_for_WatchedProxyHandler<K,V> extends Map<K, V> implements ForWa
     }
 }
 
-export class WatchedProxyHandler extends FacadeProxyHandler<WatchedGraph> {
+export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> {
     /**
      * Classes for watchers / write-trackers
      */
@@ -877,7 +877,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedGraph> {
     supervisorClasses: {watcher: Clazz, writeTracker: WriteTrackerClass} | undefined
 
 
-    constructor(target: object, graph: WatchedGraph) {
+    constructor(target: object, graph: WatchedProxyFacade) {
         super(target, graph);
 
         // determine watch and write- supervisorClasses:

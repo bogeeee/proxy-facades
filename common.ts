@@ -1,4 +1,4 @@
-import {RecordedRead} from "./watchedGraph";
+import {RecordedRead} from "./watchedProxyFacade";
 import {throwError, read} from "./Util";
 
 export type ObjKey = string | symbol;

@@ -4,8 +4,8 @@ import {
     RecordedPropertyRead,
     RecordedRead,
     recordedReadsArraysAreEqual,
-    WatchedGraph
-} from "./watchedGraph";
+    WatchedProxyFacade
+} from "./watchedProxyFacade";
 import _ from "underscore"
 import {arraysAreEqualsByPredicateFn, isObject, visitReplace} from "./Util";
 import {Clazz, ObjKey} from "./common";
@@ -30,10 +30,10 @@ function createSampleObjectGraph() {
 describe('ProxyFacade tests', () => {
     test("Base implementation", () => {
         const sampleGraph = createSampleObjectGraph();
-        let watchedGraph = new WatchedGraph();
-        const proxy = watchedGraph.getProxyFor(sampleGraph);
+        let watchedProxyFacade = new WatchedProxyFacade();
+        const proxy = watchedProxyFacade.getProxyFor(sampleGraph);
         expect(proxy !== sampleGraph).toBeTruthy();
-        expect(watchedGraph.getProxyFor(proxy) === proxy).toBeTruthy(); // Should return the proxy again
+        expect(watchedProxyFacade.getProxyFor(proxy) === proxy).toBeTruthy(); // Should return the proxy again
         expect(proxy.appName).toBe("HelloApp");
         expect(proxy.users === sampleGraph.users).toBe(false);
         expect(proxy.users.length).toBe(2);
@@ -41,7 +41,7 @@ describe('ProxyFacade tests', () => {
 
     test("Arrays", () => {
         const origArray = ["a", "b", "c"]
-        const proxy = new WatchedGraph().getProxyFor(origArray);
+        const proxy = new WatchedProxyFacade().getProxyFor(origArray);
         expect(proxy[0]).toBe("a");
         expect(proxy.length).toBe(3);
 
@@ -60,7 +60,7 @@ describe('ProxyFacade tests', () => {
                 return this === origObj;
             }
         };
-        const proxy = new WatchedGraph().getProxyFor(origObj);
+        const proxy = new WatchedProxyFacade().getProxyFor(origObj);
         expect(proxy.thisIsOrigObj()).toBeFalsy();
     })
 
@@ -76,7 +76,7 @@ describe('ProxyFacade tests', () => {
                 }
             }
         };
-        const proxy = new WatchedGraph().getProxyFor(origObj);
+        const proxy = new WatchedProxyFacade().getProxyFor(origObj);
         expect(proxy.thisIsOrigObj).toBeFalsy();
         proxy.checkThisShouldNotBeOrigObj = "dummy";
     })
@@ -99,7 +99,7 @@ describe('ProxyFacade tests', () => {
         }
         origObj = new Sub();
 
-        const proxy = new WatchedGraph().getProxyFor(origObj);
+        const proxy = new WatchedProxyFacade().getProxyFor(origObj);
         expect(proxy.thisIsOrigObj).toBeFalsy();
         proxy.checkThisShouldNotBeOrigObj = "dummy";
     })
@@ -116,15 +116,15 @@ describe('ProxyFacade tests', () => {
                 }
             }
         };
-        const proxy1 = new WatchedGraph().getProxyFor(origObj);
-        const proxy2 = new WatchedGraph().getProxyFor(proxy1);
+        const proxy1 = new WatchedProxyFacade().getProxyFor(origObj);
+        const proxy2 = new WatchedProxyFacade().getProxyFor(proxy1);
         expect(proxy2.thisIsProxy2).toBeTruthy();
         proxy2.checkThisShouldBeProxy2 = "dummy";
     })
 
     test("Set a property that does not exist", () => {
         const origObj = {} as any;
-        const proxy = new WatchedGraph().getProxyFor(origObj);
+        const proxy = new WatchedProxyFacade().getProxyFor(origObj);
         const subObj = {};
         proxy.myNewProperty = subObj
         expect(proxy.myNewProperty === subObj).toBeFalsy(); // Should be a proxy of it
@@ -137,7 +137,7 @@ describe('ProxyFacade tests', () => {
 
         }
         const origObj = new MyClass();
-        const proxy = new WatchedGraph().getProxyFor(origObj);
+        const proxy = new WatchedProxyFacade().getProxyFor(origObj);
         expect(proxy instanceof MyClass).toBeTruthy();
     });
 
@@ -145,7 +145,7 @@ describe('ProxyFacade tests', () => {
         const origObj = {
             a: "b"
         };
-        const proxy = new WatchedGraph().getProxyFor(origObj);
+        const proxy = new WatchedProxyFacade().getProxyFor(origObj);
         expect(Reflect.ownKeys(proxy)).toStrictEqual(["a"]);
         //@ts-ignore
         delete proxy.a;
@@ -165,8 +165,8 @@ describe('ProxyFacade tests', () => {
             writable: false
         })
 
-        let watchedGraph = new WatchedGraph();
-        const proxy = watchedGraph.getProxyFor(orig);
+        let watchedProxyFacade = new WatchedProxyFacade();
+        const proxy = watchedProxyFacade.getProxyFor(orig);
         expect(proxy.prop).toStrictEqual(orig.prop);
     })
 
@@ -176,7 +176,7 @@ describe('ProxyFacade tests', () => {
 describe('ProxyFacade and direct enhancement tests', () => {
     for (const mode of [{
         name: "ProxyFacade", proxyOrEnhance<T extends object>(o: T) {
-            return new WatchedGraph().getProxyFor(o)
+            return new WatchedProxyFacade().getProxyFor(o)
         }
     }, {
         name: "Direct enhancement", proxyOrEnhance<T extends object>(o: T) {
@@ -361,7 +361,7 @@ describe('ProxyFacade and direct enhancement tests', () => {
     }
 });
 
-describe('WatchedGraph tests', () => {
+describe('WatchedProxyFacade tests', () => {
     function readsEqual(reads: RecordedPropertyRead[], expected: { obj: object, key?: ObjKey, value?: unknown, values?: unknown[] }[]) {
         function arraysAreShallowlyEqual(a?: unknown[], b?: unknown[]) {
             if((a === undefined) && (b === undefined)) {
@@ -388,10 +388,10 @@ describe('WatchedGraph tests', () => {
 
     test("onAfterRead", () => {
         const sampleGraph = createSampleObjectGraph();
-        let watchedGraph = new WatchedGraph();
-        const proxy = watchedGraph.getProxyFor(sampleGraph);
+        let watchedProxyFacade = new WatchedProxyFacade();
+        const proxy = watchedProxyFacade.getProxyFor(sampleGraph);
         let reads: RecordedPropertyRead[] = [];
-        watchedGraph.onAfterRead(r => reads.push(r as RecordedPropertyRead));
+        watchedProxyFacade.onAfterRead(r => reads.push(r as RecordedPropertyRead));
 
         reads = [];
         expect(proxy.appName).toBeDefined();
@@ -411,10 +411,10 @@ describe('WatchedGraph tests', () => {
 
     test("onAfterRead - iterate array", () => {
         const sampleGraph = createSampleObjectGraph();
-        let watchedGraph = new WatchedGraph();
-        const proxy = watchedGraph.getProxyFor(sampleGraph);
+        let watchedProxyFacade = new WatchedProxyFacade();
+        const proxy = watchedProxyFacade.getProxyFor(sampleGraph);
         let reads: RecordedPropertyRead[] = [];
-        watchedGraph.onAfterRead(r => reads.push(r as RecordedPropertyRead));
+        watchedProxyFacade.onAfterRead(r => reads.push(r as RecordedPropertyRead));
 
         // Iterate an array
         reads = [];
@@ -435,12 +435,12 @@ describe('WatchedGraph tests', () => {
                 return this._prop;
             }
         }
-        let watchedGraph = new WatchedGraph();
-        const proxy = watchedGraph.getProxyFor(origObj);
+        let watchedProxyFacade = new WatchedProxyFacade();
+        const proxy = watchedProxyFacade.getProxyFor(origObj);
 
         // Install listener:
         let reads: RecordedPropertyRead[] = [];
-        watchedGraph.onAfterRead(r => reads.push(r as RecordedPropertyRead));
+        watchedProxyFacade.onAfterRead(r => reads.push(r as RecordedPropertyRead));
 
         expect(proxy.prop).toBeDefined();
         expect(readsEqual(reads,[{obj: origObj, key: "_prop", value: true}])).toBeTruthy();
@@ -448,12 +448,12 @@ describe('WatchedGraph tests', () => {
 
     test("onAfterWrite", () => {
         const sampleGraph = createSampleObjectGraph();
-        let watchedGraph = new WatchedGraph();
-        const proxy = watchedGraph.getProxyFor(sampleGraph);
+        let watchedProxyFacade = new WatchedProxyFacade();
+        const proxy = watchedProxyFacade.getProxyFor(sampleGraph);
 
         // Install listener:
         let writes: unknown[] = [];
-        watchedGraph.onAfterWriteOnProperty(sampleGraph, "appName", () => writes.push("dummy"));
+        watchedProxyFacade.onAfterWriteOnProperty(sampleGraph, "appName", () => writes.push("dummy"));
 
         proxy.appName = "xyz"; proxy.appName = "123";
         expect(writes.length).toEqual(2)
@@ -462,12 +462,12 @@ describe('WatchedGraph tests', () => {
 
     test("onAfterWrite increase counter with ++", () => {
         const sampleGraph = {counter: 0};
-        let watchedGraph = new WatchedGraph();
-        const proxy = watchedGraph.getProxyFor(sampleGraph);
+        let watchedProxyFacade = new WatchedProxyFacade();
+        const proxy = watchedProxyFacade.getProxyFor(sampleGraph);
 
         // Install listener:
         let writes: unknown[] = [];
-        watchedGraph.onAfterWriteOnProperty(sampleGraph, "counter", () => writes.push("dummy"));
+        watchedProxyFacade.onAfterWriteOnProperty(sampleGraph, "counter", () => writes.push("dummy"));
 
         proxy.counter++;
         expect(writes.length).toEqual(1);
@@ -480,21 +480,21 @@ describe('WatchedGraph tests', () => {
 
     test("isArray should work on a proxy", () => {
         const origObj: any[] = [];
-        let watchedGraph = new WatchedGraph();
-        const proxy = watchedGraph.getProxyFor(origObj);
+        let watchedProxyFacade = new WatchedProxyFacade();
+        const proxy = watchedProxyFacade.getProxyFor(origObj);
         expect(Array.isArray(proxy)).toBeTruthy();
         expect(_.isArray(proxy)).toBeTruthy();
     })
 
     test("Template", () => {
         const sampleGraph = createSampleObjectGraph();
-        let watchedGraph = new WatchedGraph();
-        const proxy = watchedGraph.getProxyFor(sampleGraph);
+        let watchedProxyFacade = new WatchedProxyFacade();
+        const proxy = watchedProxyFacade.getProxyFor(sampleGraph);
     });
 });
 
 
-describe('WatchedGraph record read and watch it', () => {
+describe('WatchedProxyFacade record read and watch it', () => {
     /**
      * Just do something the runtime can't optimize away
      * @param value
@@ -515,10 +515,10 @@ describe('WatchedGraph record read and watch it', () => {
         testRecordedRead_isChanged_alreadyHandled.add(testSetup.readerFn);
 
         test(`${fnToString(testSetup.readerFn)}: All RecordedRead#isChanged should stay false`, () => {
-            let watchedGraph = new WatchedGraph();
-            const proxy = watchedGraph.getProxyFor(testSetup.origObj);
+            let watchedProxyFacade = new WatchedProxyFacade();
+            const proxy = watchedProxyFacade.getProxyFor(testSetup.origObj);
             let reads: RecordedPropertyRead[] = [];
-            watchedGraph.onAfterRead(r => reads.push(r as RecordedPropertyRead));
+            watchedProxyFacade.onAfterRead(r => reads.push(r as RecordedPropertyRead));
             testSetup.readerFn!(proxy);
             reads.forEach(read => {
                 if(read.isChanged) {
@@ -538,21 +538,21 @@ describe('WatchedGraph record read and watch it', () => {
         }
 
         for(const withNestedFacade of [false/*, true nested facades compatibility not implemented */]) {
-            for (const mode of ["With writes through WatchedGraph proxy", "With writes through installed write tracker", "With writes through 2 nested WatchedGraph facades"]) {
+            for (const mode of ["With writes through WatchedProxyFacade proxy", "With writes through installed write tracker", "With writes through 2 nested WatchedProxyFacade facades"]) {
                 test(`${name} ${withNestedFacade?" With nested facade. ":""} ${mode}`, () => {
                     const testSetup = provideTestSetup();
 
                     //writerFn:
                     if(testSetup.writerFn && testSetup.readerFn){
                         const testSetup = provideTestSetup();
-                        let watchedGraph = new WatchedGraph();
+                        let watchedProxyFacade = new WatchedProxyFacade();
                         let origObj = testSetup.origObj;
                         if(withNestedFacade) {
-                            origObj = new WatchedGraph().getProxyFor(origObj);
+                            origObj = new WatchedProxyFacade().getProxyFor(origObj);
                         }
-                        const proxy = watchedGraph.getProxyFor(origObj);
+                        const proxy = watchedProxyFacade.getProxyFor(origObj);
                         let reads: RecordedPropertyRead[] = [];
-                        watchedGraph.onAfterRead(r => reads.push(r as RecordedPropertyRead));
+                        watchedProxyFacade.onAfterRead(r => reads.push(r as RecordedPropertyRead));
                         reads = [];
                         testSetup.readerFn!(proxy);
                         expect(reads.length).toBeGreaterThan(0);
@@ -561,16 +561,16 @@ describe('WatchedGraph record read and watch it', () => {
                         const changeHandler = vitest.fn(() => {
                             const i = 0; // set breakpoint here
                         });
-                        if (mode === "With writes through WatchedGraph proxy") {
+                        if (mode === "With writes through WatchedProxyFacade proxy") {
                             lastRead.onChange(changeHandler);
                             testSetup.writerFn!(proxy);
                         } else if (mode === "With writes through installed write tracker") {
                             lastRead.onChange(changeHandler, true);
                             testSetup.writerFn!(origObj);
-                        } else if (mode === "With writes through 2 nested WatchedGraph facades") {
+                        } else if (mode === "With writes through 2 nested WatchedProxyFacade facades") {
                             lastRead.onChange(changeHandler, true);
-                            let watchedGraph2 = new WatchedGraph();
-                            const proxy2 = watchedGraph2.getProxyFor(origObj);
+                            let watchedProxyFacade2 = new WatchedProxyFacade();
+                            const proxy2 = watchedProxyFacade2.getProxyFor(origObj);
                             testSetup.writerFn!(proxy2);
                         }
                         expect(changeHandler).toBeCalledTimes(1);
@@ -581,10 +581,10 @@ describe('WatchedGraph record read and watch it', () => {
                     if (testSetup.falseWritesFn) {
                         const testSetup = provideTestSetup();
                         let origObj = testSetup.origObj;
-                        let watchedGraph = new WatchedGraph();
-                        const proxy = watchedGraph.getProxyFor(withNestedFacade?new WatchedGraph().getProxyFor(testSetup.origObj):testSetup.origObj);
+                        let watchedProxyFacade = new WatchedProxyFacade();
+                        const proxy = watchedProxyFacade.getProxyFor(withNestedFacade?new WatchedProxyFacade().getProxyFor(testSetup.origObj):testSetup.origObj);
                         let reads: RecordedPropertyRead[] = [];
-                        watchedGraph.onAfterRead(r => reads.push(r as RecordedPropertyRead));
+                        watchedProxyFacade.onAfterRead(r => reads.push(r as RecordedPropertyRead));
                         reads = [];
                         testSetup.readerFn!(proxy);
                         const lastRead = getLastRead(reads, testSetup);
@@ -592,16 +592,16 @@ describe('WatchedGraph record read and watch it', () => {
                         const changeHandler = vitest.fn(() => {
                             const i = 0; // set breakpoint here
                         });
-                        if (mode === "With writes through WatchedGraph proxy") {
+                        if (mode === "With writes through WatchedProxyFacade proxy") {
                             lastRead.onChange(changeHandler);
                             testSetup.falseWritesFn!(proxy);
                         } else if (mode === "With writes through installed write tracker") {
                             lastRead.onChange(changeHandler, true);
                             testSetup.falseWritesFn!(origObj);
-                        } else if (mode === "With writes through 2 nested WatchedGraph facades") {
+                        } else if (mode === "With writes through 2 nested WatchedProxyFacade facades") {
                             lastRead.onChange(changeHandler, true);
-                            let watchedGraph2 = new WatchedGraph();
-                            const proxy2 = watchedGraph2.getProxyFor(origObj);
+                            let watchedProxyFacade2 = new WatchedProxyFacade();
+                            const proxy2 = watchedProxyFacade2.getProxyFor(origObj);
                             testSetup.falseWritesFn!(proxy2);
                         }
                         expect(changeHandler).toBeCalledTimes(0);
@@ -613,10 +613,10 @@ describe('WatchedGraph record read and watch it', () => {
                     if (testSetup.falseReadFn !== undefined) {
                         const testSetup = provideTestSetup();
                         let origObj = testSetup.origObj;
-                        let watchedGraph = new WatchedGraph();
-                        const proxy = watchedGraph.getProxyFor(withNestedFacade?new WatchedGraph().getProxyFor(testSetup.origObj):testSetup.origObj);
+                        let watchedProxyFacade = new WatchedProxyFacade();
+                        const proxy = watchedProxyFacade.getProxyFor(withNestedFacade?new WatchedProxyFacade().getProxyFor(testSetup.origObj):testSetup.origObj);
                         let reads: RecordedPropertyRead[] = [];
-                        watchedGraph.onAfterRead(r => reads.push(r as RecordedPropertyRead));
+                        watchedProxyFacade.onAfterRead(r => reads.push(r as RecordedPropertyRead));
                         testSetup.falseReadFn!(proxy);
                         expect(reads.length).toBeGreaterThan(0);
                         const lastRead = getLastRead(reads, testSetup);
@@ -624,16 +624,16 @@ describe('WatchedGraph record read and watch it', () => {
                             const i = 0;// set breakpoint here
                         });
 
-                        if (mode === "With writes through WatchedGraph proxy") {
+                        if (mode === "With writes through WatchedProxyFacade proxy") {
                             lastRead.onChange(changeHandler);
                             testSetup.writerFn!(proxy);
                         } else if (mode === "With writes through installed write tracker") {
                             lastRead.onChange(changeHandler, true);
                             testSetup.writerFn!(origObj);
-                        } else if (mode === "With writes through 2 nested WatchedGraph facades") {
+                        } else if (mode === "With writes through 2 nested WatchedProxyFacade facades") {
                             lastRead.onChange(changeHandler, true);
-                            let watchedGraph2 = new WatchedGraph();
-                            const proxy2 = watchedGraph2.getProxyFor(origObj);
+                            let watchedProxyFacade2 = new WatchedProxyFacade();
+                            const proxy2 = watchedProxyFacade2.getProxyFor(origObj);
                             testSetup.writerFn!(proxy2);
                         }
 
@@ -648,10 +648,10 @@ describe('WatchedGraph record read and watch it', () => {
                 test(`${name}: Recorded reads are equal, when run twice${withTrackOriginal ? ` with track original` : ""}`, () => {
                     // readerFns reads are equal?
                     const testSetup = provideTestSetup();
-                    let watchedGraph = new WatchedGraph();
-                    const proxy = watchedGraph.getProxyFor(testSetup.origObj);
+                    let watchedProxyFacade = new WatchedProxyFacade();
+                    const proxy = watchedProxyFacade.getProxyFor(testSetup.origObj);
                     let reads: RecordedRead[] = [];
-                    watchedGraph.onAfterRead(r => {
+                    watchedProxyFacade.onAfterRead(r => {
                         reads.push(r as RecordedPropertyRead);
                         if (withTrackOriginal) {
                             r.onChange(() => {
@@ -1058,7 +1058,7 @@ describe('WatchedGraph record read and watch it', () => {
     */
 });
 
-describe('WatchedGraph integrity', () => {
+describe('WatchedProxyFacade integrity', () => {
     testWriterConsitency(() => {return {
         origObj: ["a", "b", "c"],
         writerFn: (obj: string[]) => {
@@ -1164,28 +1164,28 @@ describe('WatchedGraph integrity', () => {
 
 describe("Returning proxies", () => {
     class WgUtils {
-        watchedGraph: WatchedGraph
+        watchedProxyFacade: WatchedProxyFacade
 
-        constructor(watchedGraph: WatchedGraph) {
-            this.watchedGraph = watchedGraph;
+        constructor(watchedProxyFacade: WatchedProxyFacade) {
+            this.watchedProxyFacade = watchedProxyFacade;
         }
 
         expectProxy(obj: object) {
-            if (this.watchedGraph.getProxyFor(obj) !== obj) {
+            if (this.watchedProxyFacade.getProxyFor(obj) !== obj) {
                 fail("obj is not a proxy");
             }
         }
 
         expectNonProxy(obj: object) {
-            if (this.watchedGraph.getProxyFor(obj) === obj) {
+            if (this.watchedProxyFacade.getProxyFor(obj) === obj) {
                 fail("obj is a proxy");
             }
         }
     }
 
     test("Object properties should be proxies", () => {
-        const watchedGraph = new WatchedGraph();
-        const utils = new WgUtils(watchedGraph);
+        const watchedProxyFacade = new WatchedProxyFacade();
+        const utils = new WgUtils(watchedProxyFacade);
 
         const orig = {
             prop: {child: "initialValue"} as object,
@@ -1202,7 +1202,7 @@ describe("Returning proxies", () => {
                 this.prop = value;
             }
         }
-        const proxyedObj = watchedGraph.getProxyFor(orig);
+        const proxyedObj = watchedProxyFacade.getProxyFor(orig);
         utils.expectProxy(proxyedObj);
         utils.expectProxy(proxyedObj.prop);
 
@@ -1212,7 +1212,7 @@ describe("Returning proxies", () => {
         utils.expectNonProxy(orig.prop);
 
         // setting proxied
-        proxyedObj.prop = watchedGraph.getProxyFor({child: "newValue"})
+        proxyedObj.prop = watchedProxyFacade.getProxyFor({child: "newValue"})
         utils.expectProxy(proxyedObj.prop);
         utils.expectNonProxy(orig.prop);
 
@@ -1221,7 +1221,7 @@ describe("Returning proxies", () => {
         utils.expectProxy(proxyedObj.prop)
         utils.expectNonProxy(orig.prop)
 
-        proxyedObj.byAccessor= watchedGraph.getProxyFor({child: "newValue"})
+        proxyedObj.byAccessor= watchedProxyFacade.getProxyFor({child: "newValue"})
         utils.expectProxy(proxyedObj.prop)
         utils.expectNonProxy(orig.prop)
 
@@ -1229,14 +1229,14 @@ describe("Returning proxies", () => {
         utils.expectProxy(proxyedObj.prop)
         utils.expectNonProxy(orig.prop)
 
-        proxyedObj.setProp(watchedGraph.getProxyFor({child: "newValue"}))
+        proxyedObj.setProp(watchedProxyFacade.getProxyFor({child: "newValue"}))
         utils.expectProxy(proxyedObj.prop)
         utils.expectNonProxy(orig.prop)
     })
 
     test("User methods should return proxies", () => {
-        const watchedGraph = new WatchedGraph();
-        const utils = new WgUtils(watchedGraph);
+        const watchedProxyFacade = new WatchedProxyFacade();
+        const utils = new WgUtils(watchedProxyFacade);
 
         const orig = {
             someObj: {some: "value"},
@@ -1248,7 +1248,7 @@ describe("Returning proxies", () => {
                 return this.someObj === candidate;
             }
         }
-        const proxy = watchedGraph.getProxyFor(orig);
+        const proxy = watchedProxyFacade.getProxyFor(orig);
         utils.expectProxy(proxy);
         utils.expectProxy(proxy.someObj);
         utils.expectProxy(proxy.userMethod());
@@ -1257,13 +1257,13 @@ describe("Returning proxies", () => {
     })
 
     test("Array should return proxies", () => {
-        const watchedGraph = new WatchedGraph();
-        const utils = new WgUtils(watchedGraph);
+        const watchedProxyFacade = new WatchedProxyFacade();
+        const utils = new WgUtils(watchedProxyFacade);
 
         const obj1 = {};
         const obj2 = {};
         const orig = [obj1,obj2]
-        const proxy = watchedGraph.getProxyFor(orig);
+        const proxy = watchedProxyFacade.getProxyFor(orig);
         utils.expectProxy(proxy);
         utils.expectProxy(proxy[0]);
         proxy.push({x: "123"})
@@ -1278,8 +1278,8 @@ describe("Returning proxies", () => {
 
 
     test("Setting properties on an object should not self-infect", () => {
-        const watchedGraph = new WatchedGraph();
-        const utils = new WgUtils(watchedGraph);
+        const watchedProxyFacade = new WatchedProxyFacade();
+        const utils = new WgUtils(watchedProxyFacade);
 
         const orig = {
             someObj: {some: "value"} as object,
@@ -1287,27 +1287,27 @@ describe("Returning proxies", () => {
                 this.someObj = value;
             },
         }
-        const proxy = watchedGraph.getProxyFor(orig);
+        const proxy = watchedProxyFacade.getProxyFor(orig);
 
         const anotherObj = {prop: "another"};
         proxy.setSomeObj(anotherObj);
         utils.expectNonProxy(orig.someObj);
         utils.expectProxy(proxy.someObj);
 
-        proxy.setSomeObj(watchedGraph.getProxyFor(anotherObj));
+        proxy.setSomeObj(watchedProxyFacade.getProxyFor(anotherObj));
         utils.expectNonProxy(orig.someObj);
         utils.expectProxy(proxy.someObj);
     })
 
     test("Proxies with set", () => {
-        const watchedGraph = new WatchedGraph();
-        const utils = new WgUtils(watchedGraph);
+        const watchedProxyFacade = new WatchedProxyFacade();
+        const utils = new WgUtils(watchedProxyFacade);
 
         const origSet = new Set<object>();
-        const proxyedSet = watchedGraph.getProxyFor(origSet);
+        const proxyedSet = watchedProxyFacade.getProxyFor(origSet);
 
         const storedObjOrig = {some: "value"};
-        const storedObjectProxy = watchedGraph.getProxyFor(storedObjOrig);
+        const storedObjectProxy = watchedProxyFacade.getProxyFor(storedObjOrig);
         proxyedSet.add(storedObjectProxy);
         utils.expectNonProxy(origSet.keys().next().value!);
         utils.expectNonProxy(origSet.values().next().value!);
@@ -1322,17 +1322,17 @@ describe("Returning proxies", () => {
     })
 
     test("Proxies with map", () => {
-        const watchedGraph = new WatchedGraph();
-        const utils = new WgUtils(watchedGraph);
+        const watchedProxyFacade = new WatchedProxyFacade();
+        const utils = new WgUtils(watchedProxyFacade);
 
         const origMap = new Map<object,object>();
-        const proxyedMap = watchedGraph.getProxyFor(origMap);
+        const proxyedMap = watchedProxyFacade.getProxyFor(origMap);
 
         const origValue = {some: "value"};
-        const valueProxy = watchedGraph.getProxyFor(origValue);
+        const valueProxy = watchedProxyFacade.getProxyFor(origValue);
 
         const origKey = {some: "theKey"};
-        const keyProxy = watchedGraph.getProxyFor(origKey);
+        const keyProxy = watchedProxyFacade.getProxyFor(origKey);
 
         proxyedMap.set(origKey, origValue);
         utils.expectNonProxy(origMap.keys().next().value!);
@@ -1370,25 +1370,25 @@ function enhanceWithWriteTrackerDeep(obj: object) {
 }
 
 /**
- * Test, if writerFn behaves normal when used through the watchedgraph, etc.
+ * Test, if writerFn behaves normal when used through the watchedProxyFacade, etc.
  * @param name
  * @param provideTestSetup
  */
 function testWriterConsitency<T extends object>(provideTestSetup: () => {origObj: T, writerFn: (obj: T) => void}, name?: string) {
-    for (const mode of ["With writes through WatchedGraph proxy", "With writes through installed write tracker"]) {
+    for (const mode of ["With writes through WatchedProxyFacade proxy", "With writes through installed write tracker"]) {
         test(`WriterFn ${name || fnToString(provideTestSetup().writerFn)} should behave normally. ${mode}`, () => {
             const origForCompareTestSetup = provideTestSetup();
             origForCompareTestSetup.writerFn(origForCompareTestSetup.origObj);
 
-            if (mode === "With writes through WatchedGraph proxy") {
+            if (mode === "With writes through WatchedProxyFacade proxy") {
                 const testSetup = provideTestSetup();
-                const proxy = new WatchedGraph().getProxyFor(testSetup.origObj)
+                const proxy = new WatchedProxyFacade().getProxyFor(testSetup.origObj)
                 testSetup.writerFn(proxy);
                 expect(_.isEqual(proxy, origForCompareTestSetup.origObj)).toBeTruthy();
                 expect(_.isEqual(testSetup.origObj, origForCompareTestSetup.origObj)).toBeTruthy();
             } else if (mode === "With writes through installed write tracker") {
                 const testSetup = provideTestSetup();
-                const proxy = new WatchedGraph().getProxyFor(testSetup.origObj);
+                const proxy = new WatchedProxyFacade().getProxyFor(testSetup.origObj);
                 enhanceWithWriteTrackerDeep(testSetup.origObj);
                 testSetup.writerFn(testSetup.origObj);
                 expect(_.isEqual(proxy, origForCompareTestSetup.origObj)).toBeTruthy();
