@@ -23,7 +23,7 @@ export function getWriteListenersForSet(set: Set<unknown>) {
 }
 
 /**
- * Can be either used as a supervisor-class in a WatchedGraphHandler, or installed on the non-proxied object via Object.setPrototypeOf
+ * Can be either used as a supervisor-class in a WatchedProxyHandler, or installed on the non-proxied object via Object.setPrototypeOf
  * The "this" may be different in these cases.
  */
 export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>{
@@ -59,7 +59,7 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
     }
 
     /**
-     * Will return the original object when this class is used as supervisor class in the WatchedGraphHandler
+     * Will return the original object when this class is used as supervisor class in the WatchedProxyHandler
      */
     get _target(): Set<T> {
         return this;

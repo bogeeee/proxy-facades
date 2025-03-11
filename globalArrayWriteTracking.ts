@@ -22,7 +22,7 @@ export function getWriteListenersForArray(array: unknown[]) {
 }
 
 /**
- * Can be either used as a supervisor-class in a WatchedGraphHandler, or installed on the non-proxied object via Object.setPrototypeOf
+ * Can be either used as a supervisor-class in a WatchedProxyHandler, or installed on the non-proxied object via Object.setPrototypeOf
  * The "this" may be different in these cases.
  */
 export class WriteTrackedArray<T> extends Array<T> implements DualUseTracker<Array<T>>{
@@ -68,7 +68,7 @@ export class WriteTrackedArray<T> extends Array<T> implements DualUseTracker<Arr
     }
 
     /**
-     * Will return the original object when this class is used as supervisor class in the WatchedGraphHandler
+     * Will return the original object when this class is used as supervisor class in the WatchedProxyHandler
      */
     get _target(): Array<T> {
         return this;

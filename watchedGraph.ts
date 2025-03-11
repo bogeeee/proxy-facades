@@ -42,7 +42,7 @@ export abstract class RecordedRead {
 
 /**
  * Access a single value (=variable or return value from a function)
- * This read is can only be constructed manually (not through a WatchedGraph / WatchedGraphHandler
+ * This read is can only be constructed manually (not through a WatchedGraph / WatchedProxyHandler
  */
 export class RecordedValueRead extends RecordedRead{
     value: unknown;
@@ -73,7 +73,7 @@ export class RecordedValueRead extends RecordedRead{
 }
 
 export abstract class RecordedReadOnProxiedObject extends RecordedRead {
-    proxyHandler!: WatchedGraphHandler
+    proxyHandler!: WatchedProxyHandler
     /**
      * A bit redundant with proxyhandler. But for performance reasons, we leave it
      */
@@ -527,7 +527,7 @@ export function recordedReadsArraysAreEqual(a: RecordedRead[], b: RecordedRead[]
  * - record read + watch recorded for modifications. For re-render trigger
  * - record read and make several snapshots (when load is called) and compare exactly those reads
  */
-export class WatchedGraph extends ProxyFacade<WatchedGraphHandler> {
+export class WatchedGraph extends ProxyFacade<WatchedProxyHandler> {
     // ** Configuration**
     /**
      * Watches also writes that are not made through a proxy of this WatchedGraph by installing a setter (property accessor) on each of the desired properties
@@ -602,16 +602,16 @@ export class WatchedGraph extends ProxyFacade<WatchedGraphHandler> {
         }
     }
 
-    protected crateHandler(target: object, graph: any): WatchedGraphHandler {
-        return new WatchedGraphHandler(target, graph);
+    protected crateHandler(target: object, graph: any): WatchedProxyHandler {
+        return new WatchedProxyHandler(target, graph);
     }
 }
 
-export interface ForWatchedGraphHandler<T> extends DualUseTracker<T> {
+export interface ForWatchedProxyHandler<T> extends DualUseTracker<T> {
     /**
      * Will return the handler when called through the handler
      */
-    get _watchedGraphHandler(): WatchedGraphHandler;
+    get _WatchedProxyHandler(): WatchedProxyHandler;
 
     /**
      * The original (unproxied) object
@@ -622,17 +622,17 @@ export interface ForWatchedGraphHandler<T> extends DualUseTracker<T> {
 /**
  * Patches methods / accessors
  */
-class WatchedArray_for_WatchedGraphHandler<T> extends Array<T> implements ForWatchedGraphHandler<Array<T>> {
-    get _watchedGraphHandler(): WatchedGraphHandler {
-        throw new Error("not calling from inside a WatchedGraphHandler"); // Will return the handler when called through the handler
+class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements ForWatchedProxyHandler<Array<T>> {
+    get _WatchedProxyHandler(): WatchedProxyHandler {
+        throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the handler when called through the handler
     }
     get _target(): Array<T> {
-        throw new Error("not calling from inside a WatchedGraphHandler"); // Will return the value when called through the handler
+        throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the value when called through the handler
     }
 
     protected _fireAfterValuesRead() {
         let recordedArrayValuesRead = new RecordedArrayValuesRead([...this._target]);
-        this._watchedGraphHandler?.fireAfterRead(recordedArrayValuesRead);
+        this._WatchedProxyHandler?.fireAfterRead(recordedArrayValuesRead);
     }
 
     /**
@@ -708,17 +708,17 @@ class WatchedArray_for_WatchedGraphHandler<T> extends Array<T> implements ForWat
 
 }
 
-class WatchedSet_for_WatchedGraphHandler<T> extends Set<T> implements ForWatchedGraphHandler<Set<T>> {
-    get _watchedGraphHandler(): WatchedGraphHandler {
-        throw new Error("not calling from inside a WatchedGraphHandler"); // Will return the handler when called through the handler
+class WatchedSet_for_WatchedProxyHandler<T> extends Set<T> implements ForWatchedProxyHandler<Set<T>> {
+    get _WatchedProxyHandler(): WatchedProxyHandler {
+        throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the handler when called through the handler
     }
     get _target(): Set<T> {
-        throw new Error("not calling from inside a WatchedGraphHandler"); // Will return the value when called through the handler
+        throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the value when called through the handler
     }
 
     protected _fireAfterValuesRead() {
         let recordedSetValuesRead = new RecordedSetValuesRead([...this._target]);
-        this._watchedGraphHandler?.fireAfterRead(recordedSetValuesRead);
+        this._WatchedProxyHandler?.fireAfterRead(recordedSetValuesRead);
     }
 
     /**
@@ -732,7 +732,7 @@ class WatchedSet_for_WatchedGraphHandler<T> extends Set<T> implements ForWatched
         const result = this._target.has(value);
 
         const read = new RecordedSet_has(value, result);
-        this._watchedGraphHandler?.fireAfterRead(read);
+        this._WatchedProxyHandler?.fireAfterRead(read);
 
         return result;
     }
@@ -775,17 +775,17 @@ class WatchedSet_for_WatchedGraphHandler<T> extends Set<T> implements ForWatched
     }
 }
 
-class WatchedMap_for_WatchedGraphHandler<K,V> extends Map<K, V> implements ForWatchedGraphHandler<Map<K, V>> {
-    get _watchedGraphHandler(): WatchedGraphHandler {
-        throw new Error("not calling from inside a WatchedGraphHandler"); // Will return the handler when called through the handler
+class WatchedMap_for_WatchedProxyHandler<K,V> extends Map<K, V> implements ForWatchedProxyHandler<Map<K, V>> {
+    get _WatchedProxyHandler(): WatchedProxyHandler {
+        throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the handler when called through the handler
     }
     get _target(): Map<K,V> {
-        throw new Error("not calling from inside a WatchedGraphHandler"); // Will return the value when called through the handler
+        throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the value when called through the handler
     }
 
     protected _fireAfterEntriesRead() {
         let recordedMapEntriesRead = new RecordedMapEntriesRead([...this._target.entries()]);
-        this._watchedGraphHandler?.fireAfterRead(recordedMapEntriesRead);
+        this._WatchedProxyHandler?.fireAfterRead(recordedMapEntriesRead);
     }
 
     /**
@@ -800,7 +800,7 @@ class WatchedMap_for_WatchedGraphHandler<K,V> extends Map<K, V> implements ForWa
         const result = this._target.get(key);
 
         const read = new RecordedMap_get(key, keyExists, result);
-        this._watchedGraphHandler?.fireAfterRead(read);
+        this._WatchedProxyHandler?.fireAfterRead(read);
 
         return result;
     }
@@ -809,7 +809,7 @@ class WatchedMap_for_WatchedGraphHandler<K,V> extends Map<K, V> implements ForWa
         const result = this._target.has(key);
 
         const read = new RecordedMap_has(key, result);
-        this._watchedGraphHandler?.fireAfterRead(read);
+        this._WatchedProxyHandler?.fireAfterRead(read);
 
         return result;
     }
@@ -818,7 +818,7 @@ class WatchedMap_for_WatchedGraphHandler<K,V> extends Map<K, V> implements ForWa
         const result = this._target.values();
 
         let recordedMapValuesRead = new RecordedMapValuesRead([...result]);
-        this._watchedGraphHandler?.fireAfterRead(recordedMapValuesRead);
+        this._WatchedProxyHandler?.fireAfterRead(recordedMapValuesRead);
 
         return result;
     }
@@ -833,7 +833,7 @@ class WatchedMap_for_WatchedGraphHandler<K,V> extends Map<K, V> implements ForWa
         const result = this._target.keys();
 
         let recordedMapKeysRead = new RecordedMapKeysRead([...result]);
-        this._watchedGraphHandler?.fireAfterRead(recordedMapKeysRead);
+        this._WatchedProxyHandler?.fireAfterRead(recordedMapKeysRead);
         
         return result;
     }
@@ -855,20 +855,20 @@ class WatchedMap_for_WatchedGraphHandler<K,V> extends Map<K, V> implements ForWa
         const result = this._target.size;
 
         let recordedMapKeysRead = new RecordedMapKeysRead([...this._target.keys()]); // TODO: RecordedMapSizeRead
-        this._watchedGraphHandler?.fireAfterRead(recordedMapKeysRead);
+        this._WatchedProxyHandler?.fireAfterRead(recordedMapKeysRead);
         
         return result;
     }
 }
 
-export class WatchedGraphHandler extends FacadeProxyHandler<WatchedGraph> {
+export class WatchedProxyHandler extends FacadeProxyHandler<WatchedGraph> {
     /**
      * Classes for watchers / write-trackers
      */
-    static supervisorClassesMap = new Map<Clazz, WatchedGraphHandler["supervisorClasses"]>([
-        [Array, {watcher: WatchedArray_for_WatchedGraphHandler, writeTracker: WriteTrackedArray}],
-        [Set, {watcher: WatchedSet_for_WatchedGraphHandler, writeTracker: WriteTrackedSet}],
-        [Map, {watcher: WatchedMap_for_WatchedGraphHandler, writeTracker: WriteTrackedMap}]
+    static supervisorClassesMap = new Map<Clazz, WatchedProxyHandler["supervisorClasses"]>([
+        [Array, {watcher: WatchedArray_for_WatchedProxyHandler, writeTracker: WriteTrackedArray}],
+        [Set, {watcher: WatchedSet_for_WatchedProxyHandler, writeTracker: WriteTrackedSet}],
+        [Map, {watcher: WatchedMap_for_WatchedProxyHandler, writeTracker: WriteTrackedMap}]
     ]);
     
     /**
@@ -881,9 +881,9 @@ export class WatchedGraphHandler extends FacadeProxyHandler<WatchedGraph> {
         super(target, graph);
 
         // determine watch and write- supervisorClasses:
-        for(const ClassToSupervise of WatchedGraphHandler.supervisorClassesMap.keys()) {
+        for(const ClassToSupervise of WatchedProxyHandler.supervisorClassesMap.keys()) {
             if(target instanceof ClassToSupervise) {
-                this.supervisorClasses = WatchedGraphHandler.supervisorClassesMap.get(ClassToSupervise);
+                this.supervisorClasses = WatchedProxyHandler.supervisorClassesMap.get(ClassToSupervise);
                 if(target.constructor !== ClassToSupervise && target.constructor !== this.supervisorClasses!.writeTracker) {
                     throw new Error(`Cannot create proxy of a **subclass** of ${ClassToSupervise.name} or ${this.supervisorClasses!.writeTracker.name}. It must be directly that class.`)
                 }
@@ -903,7 +903,7 @@ export class WatchedGraphHandler extends FacadeProxyHandler<WatchedGraph> {
         const thisHandler = this;
         const receiverMustBeNonProxied = this.supervisorClasses?.writeTracker.receiverMustBeNonProxied;
 
-        if(key === "_watchedGraphHandler") { // TODO: use symbol for that (performance)
+        if(key === "_WatchedProxyHandler") { // TODO: use symbol for that (performance)
             return this;
         }
         if(key === "_target") { // TODO: use symbol for that (performance)

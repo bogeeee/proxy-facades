@@ -26,7 +26,7 @@ export function getWriteListenersForMap(map: Map<unknown,unknown>) {
 }
 
 /**
- * Can be either used as a supervisor-class in a WatchedGraphHandler, or installed on the non-proxied object via Object.setPrototypeOf
+ * Can be either used as a supervisor-class in a WatchedProxyHandler, or installed on the non-proxied object via Object.setPrototypeOf
  * The "this" may be different in these cases.
  */
 export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map<K,V>>{
@@ -62,7 +62,7 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
     }
 
     /**
-     * Will return the original object when this class is used as supervisor class in the WatchedGraphHandler
+     * Will return the original object when this class is used as supervisor class in the WatchedProxyHandler
      */
     get _target(): Map<K, V> {
         return this;
