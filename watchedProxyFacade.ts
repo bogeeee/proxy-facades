@@ -14,7 +14,7 @@ import {
     checkEsRuntimeBehaviour,
     Clazz,
     ForWatchedProxyHandler,
-    getPropertyDescriptor,
+    getPropertyDescriptor, IWatchedProxyHandler_common,
     ObjKey,
     RecordedRead,
     RecordedReadOnProxiedObject,
@@ -828,7 +828,7 @@ class WatchedMap_for_WatchedProxyHandler<K,V> extends Map<K, V> implements ForWa
     }
 }
 
-export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> {
+export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> implements  IWatchedProxyHandler_common{
     /**
      * Classes for watchers / write-trackers
      */

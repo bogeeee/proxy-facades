@@ -163,11 +163,19 @@ export function checkEsRuntimeBehaviour() {
     esRuntimeBehaviourAlreadyChecked = true;
 }
 
+export interface IWatchedProxyHandler_common {
+    /**
+     * Registers the Read to this WatchedProxyHandler and fires it on the WatchedFacade (informs WatchedFacade's listeners)
+     * @param read
+     */
+    fireAfterRead(read: RecordedReadOnProxiedObject): void;
+}
+
 export interface ForWatchedProxyHandler<T> extends DualUseTracker<T> {
     /**
      * Will return the handler when called through the handler
      */
-    get _WatchedProxyHandler(): WatchedProxyHandler;
+    get _WatchedProxyHandler(): IWatchedProxyHandler_common;
 
     /**
      * The original (unproxied) object
