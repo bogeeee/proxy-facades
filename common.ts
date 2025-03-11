@@ -183,7 +183,14 @@ export interface ForWatchedProxyHandler<T> extends DualUseTracker<T> {
 /**
  * Configures tracking behaviour for a certain class
  */
-export class ClassTrackingConfiguration {
+export abstract class ClassTrackingConfiguration {
+    /**
+     * For which is this config?
+     */
+    abstract clazz: Clazz // TODO: Minor: better type than Clazz.
+
+    worksForSubclasses = false;
+
     readTracker?: Clazz;
     changeTracker?: Clazz;
     /**

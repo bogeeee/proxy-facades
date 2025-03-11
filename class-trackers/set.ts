@@ -245,6 +245,7 @@ export class WatchedSet_for_WatchedProxyHandler<T> extends Set<T> implements For
 }
 
 export const config = new class extends ClassTrackingConfiguration {
+    clazz=Set;
     readTracker= WatchedSet_for_WatchedProxyHandler;
     changeTracker = WriteTrackedSet
 

@@ -409,6 +409,7 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
 }
 
 export const config = new class extends ClassTrackingConfiguration {
+    clazz=Map;
     readTracker= WatchedMap_for_WatchedProxyHandler;
     changeTracker = WriteTrackedMap
 

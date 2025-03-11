@@ -1,3 +1,5 @@
+import {Clazz} from "./common";
+
 export function throwError(e: string | Error) {
     if(e !== null && e instanceof Error) {
         throw e;
@@ -181,4 +183,14 @@ export function arraysWithEntriesAreShallowlyEqual(a: Array<[unknown, unknown]>,
         }
     }
     return true;
+}
+
+
+export function classIsSubclassOf(clazz: Clazz, superClass: Clazz) {
+    do {
+        if(clazz === superClass) {
+            return true;
+        }
+    } while((clazz = clazz.prototype?.prototype?.constructor) !== undefined);
+    return false;
 }

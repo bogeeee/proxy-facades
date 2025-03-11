@@ -231,6 +231,7 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
 }
 
 export const config = new class extends ClassTrackingConfiguration {
+    clazz= Array;
     readTracker= WatchedArray_for_WatchedProxyHandler;
     changeTracker = WriteTrackedArray
     /**
