@@ -393,9 +393,17 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
         return result;
     }
 
-    forEach(...args: unknown[]) {
-        //@ts-ignore
-        const result = this._target.forEach(...args);
+    forEach(callbackfn: (value: V, key: K, map: Map<K, V>, ...restOfArgs: unknown[]) => void, ...restOfArgs: unknown[]) {
+        const getProxyFor: (<T>(val: T)=>T) = (value) => this._watchedProxyHandler.getFacade().getProxyFor(value);
+
+        /**
+         * Calls callbackFn but supplies it it's arguments *proxied*
+         */
+        function callCallbackFnWithProxies(this: Map<K, V>, value: V, key: K, map: Map<K, V>, ...restOfArgs: unknown[]): void{
+            callbackfn.apply(this, [getProxyFor(value), getProxyFor(key), getProxyFor(map), ...restOfArgs]);
+        }
+
+        const result = this._target.forEach(callCallbackFnWithProxies, ...restOfArgs);
         this._fireAfterEntriesRead();
         return result;
     }

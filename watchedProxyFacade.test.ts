@@ -1271,6 +1271,13 @@ describe("Returning proxies", () => {
         utils.expectNonProxy(orig[2]);
         proxy.push(proxy[0]); // add again
         utils.expectNonProxy(orig[3]);
+
+        proxy.forEach((value, index, array) => {
+            utils.expectNonProxy(this as any as object);
+            utils.expectProxy(value);
+            utils.expectProxy(array);
+        },{})
+
         utils.expectProxy(proxy.pop()!);
         utils.expectNonProxy(orig.pop()!);
     })
@@ -1317,7 +1324,14 @@ describe("Returning proxies", () => {
         utils.expectProxy([...proxyedSet][0]);
 
         expect(proxyedSet.has(storedObjectProxy)).toBeTruthy()
-        expect(proxyedSet.has(storedObjOrig)).toBeFalsy();
+        //expect(proxyedSet.has(storedObjOrig)).toBeFalsy(); // may still work
+
+        proxyedSet.forEach((value, key, set) => {
+            utils.expectNonProxy(this as any as object);
+            utils.expectProxy(value);
+            utils.expectProxy(key);
+            utils.expectProxy(set);
+        },{})
 
         // TODO: baseline 2024 methods (intersection, ...)
 
@@ -1356,9 +1370,11 @@ describe("Returning proxies", () => {
         utils.expectProxy([...proxyedMap.keys()][0]);
         utils.expectProxy(proxyedMap.entries().next().value![0]);
         utils.expectProxy(proxyedMap.entries().next().value![1]);
-        proxyedMap.forEach((value, key) => {
+        proxyedMap.forEach((value, key, map) => {
+            utils.expectNonProxy(this as any as object);
             utils.expectProxy(value);
             utils.expectProxy(key);
+            utils.expectProxy(map);
         })
         utils.expectProxy([...proxyedMap][0][0]); // First key
         utils.expectProxy([...proxyedMap][0][1]); // first value

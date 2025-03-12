@@ -232,9 +232,17 @@ export class WatchedSet_for_WatchedProxyHandler<T> extends Set<T> implements For
         return result;
     }
 
-    forEach(...args: unknown[]) {
-        //@ts-ignore
-        const result = this._target.forEach(...args);
+    forEach(callbackfn: (value: T, value2: T, set: Set<T>, ...restOfArgs: unknown[]) => void, ...restOfArgs: unknown[]) {
+        const getProxyFor: (<T>(val: T)=>T) = (value) => this._watchedProxyHandler.getFacade().getProxyFor(value);
+
+        /**
+         * Calls callbackFn but supplies it it's arguments *proxied*
+         */
+        function callCallbackFnWithProxies(this: Set<T>, value: T, value2: T, set: Set<T>, ...restOfArgs: unknown[]): void{
+            callbackfn.apply(this, [getProxyFor(value), getProxyFor(value2), getProxyFor(set), ...restOfArgs]);
+        }
+
+        const result = this._target.forEach(callCallbackFnWithProxies, ...restOfArgs);
         this._fireAfterValuesRead();
         return result;
     }
