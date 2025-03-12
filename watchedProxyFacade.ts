@@ -297,7 +297,8 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
                 }
             }
             // When arriving here, the field is not **directly** in one of the tracker classes
-            origMethod = this.trackingConfig.changeTracker?.prototype[key] // TODO: shouldn't we use this.targe[key] instead ??? (as said, not from changeTracker?.prototype but more up in the prototype chain)
+            //@ts-ignore
+            origMethod = this.target[key];
             if(this.trackingConfig.knownHighLevelMethods.has(key)) {
                 return trapHighLevelReaderWriterMethod
             }
