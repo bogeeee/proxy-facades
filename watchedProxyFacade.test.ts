@@ -10,7 +10,7 @@ import {deleteProperty, installWriteTracker} from "./globalWriteTracking";
 import {ProxyFacade} from "./proxyFacade";
 import exp from "constants";
 import {fail} from "assert";
-import {RecordedArrayValuesRead} from "./class-trackers/array";
+import {RecordedArrayValuesRead} from "./class-trackers/Array";
 
 beforeEach(() => {
 

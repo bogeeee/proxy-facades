@@ -1,13 +1,11 @@
 import {FacadeProxyHandler, ProxyFacade} from "./proxyFacade";
 import {throwError} from "./Util";
 import {installWriteTracker, objectHasWriteTrackerInstalled} from "./globalWriteTracking";
-import {WatchedArray_for_WatchedProxyHandler, WriteTrackedArray} from "./class-trackers/array";
 import {
     AfterChangeOwnKeysListener,
     AfterReadListener,
     AfterWriteListener,
     checkEsRuntimeBehaviour,
-    Clazz,
     getPropertyDescriptor,
     IWatchedProxyHandler_common,
     ObjKey,
@@ -17,8 +15,6 @@ import {
 } from "./common";
 import {getWriteListenersForObject, writeListenersForObject} from "./globalObjectWriteTracking";
 import _ from "underscore"
-import {WatchedSet_for_WatchedProxyHandler, WriteTrackedSet} from "./class-trackers/set";
-import {WatchedMap_for_WatchedProxyHandler, WriteTrackedMap} from "./class-trackers/map";
 import {getTrackingConfigFor} from "./class-trackers/index";
 
 

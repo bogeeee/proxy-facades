@@ -1,7 +1,7 @@
 import {ClassTrackingConfiguration, Clazz} from "../common";
-import {config as arrayConfig} from "./array"
-import {config as setConfig} from "./set"
-import {config as mapConfig} from "./map"
+import {config as arrayConfig} from "./Array"
+import {config as setConfig} from "./Set"
+import {config as mapConfig} from "./Map"
 import {classIsSubclassOf, throwError} from "../Util";
 
 /**
