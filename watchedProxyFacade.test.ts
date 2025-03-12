@@ -1300,7 +1300,7 @@ describe("Returning proxies", () => {
         utils.expectProxy(proxy.someObj);
     })
 
-    test("Proxies with set", () => {
+    test("Proxies with Set", () => {
         const watchedProxyFacade = new WatchedProxyFacade();
         const utils = new WgUtils(watchedProxyFacade);
 
@@ -1320,9 +1320,18 @@ describe("Returning proxies", () => {
         expect(proxyedSet.has(storedObjOrig)).toBeFalsy();
 
         // TODO: baseline 2024 methods (intersection, ...)
+
+
+        // ** deleting the value ***
+        //proxyedSet.delete(storedObjOrig) // may work
+        //expect(origSet.size).toEqual(1);
+        origSet.delete(storedObjectProxy) // Should not work
+        expect(origSet.size).toEqual(1);
+        proxyedSet.delete(storedObjectProxy) // Should work
+        expect(origSet.size).toEqual(0);
     })
 
-    test("Proxies with map", () => {
+    test("Proxies with Map", () => {
         const watchedProxyFacade = new WatchedProxyFacade();
         const utils = new WgUtils(watchedProxyFacade);
 
@@ -1353,6 +1362,15 @@ describe("Returning proxies", () => {
         })
         utils.expectProxy([...proxyedMap][0][0]); // First key
         utils.expectProxy([...proxyedMap][0][1]); // first value
+
+
+        // ** deleting the value ***
+        //proxyedMap.delete(origKey) // may work
+        //expect(origMap.size).toEqual(1);
+        origMap.delete(keyProxy) // Should not work
+        expect(origMap.size).toEqual(1);
+        proxyedMap.delete(keyProxy) // Should work
+        expect(origMap.size).toEqual(0);
 
     })
 });
