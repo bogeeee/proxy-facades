@@ -1,7 +1,7 @@
 import {
     AfterWriteListener, ClassTrackingConfiguration,
     DualUseTracker,
-    ForWatchedProxyHandler,
+    ForWatchedProxyHandler, IWatchedProxyHandler_common,
     ObjKey,
     RecordedRead,
     RecordedReadOnProxiedObject,
@@ -41,7 +41,9 @@ export function getWriteListenersForMap(map: Map<unknown,unknown>) {
  */
 export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map<K,V>>{
 
-
+    get _watchedProxyHandler(): IWatchedProxyHandler_common | undefined {
+        return undefined;
+    }
 
     protected _fireAfterUnspecificWrite() {
         runAndCallListenersOnce_after(this._target, (callListeners) => {
@@ -65,6 +67,9 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
     }
 
     set(key:K, value: V): this {
+        key = this._watchedProxyHandler?this._watchedProxyHandler.getFacade().getUnproxiedValue(key):key; // Translate to unproxied key
+        value = this._watchedProxyHandler?this._watchedProxyHandler.getFacade().getUnproxiedValue(value):value; // Translate to unproxied value
+        
         const isNewKey = !this._target.has(key);
         const valueChanged = isNewKey || this._target.get(key) !== value;
         if(!isNewKey && !valueChanged) {
@@ -89,6 +94,7 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
     }
 
     delete(key: K): boolean {
+        key = this._watchedProxyHandler?this._watchedProxyHandler.getFacade().getUnproxiedValue(key):key; // Translate to unproxied key
         const result = Map.prototype.delete.apply(this._target, [key]); // this.delete(key); receiver for .delete must be the real/nonproxied Map
         if(result) { // deleted?
             runAndCallListenersOnce_after(this._target, (callListeners) => {
@@ -343,6 +349,7 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
     }
 
     get(key: K): V | undefined {
+        key = this._watchedProxyHandler.getFacade().getUnproxiedValue(key);
         const keyExists = this._target.has(key);
         const result = this._target.get(key);
 
@@ -353,6 +360,7 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
     }
 
     has(key: K): boolean {
+        key = this._watchedProxyHandler.getFacade().getUnproxiedValue(key);
         const result = this._target.has(key);
 
         const read = new RecordedMap_has(key, result);

@@ -1,7 +1,7 @@
 import {
     AfterWriteListener, ClassTrackingConfiguration,
     DualUseTracker,
-    ForWatchedProxyHandler,
+    ForWatchedProxyHandler, IWatchedProxyHandler_common,
     ObjKey,
     RecordedRead,
     RecordedReadOnProxiedObject,
@@ -38,6 +38,10 @@ export function getWriteListenersForSet(set: Set<unknown>) {
  */
 export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>{
 
+    get _watchedProxyHandler(): IWatchedProxyHandler_common | undefined {
+        return undefined;
+    }
+
     protected _fireAfterUnspecificWrite() {
         runAndCallListenersOnce_after(this._target, (callListeners) => {
             callListeners(writeListenersForObject.get(this._target)?.afterUnspecificWrite);
@@ -60,6 +64,8 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
     }
 
     add(value:T): this {
+        value = this._watchedProxyHandler?this._watchedProxyHandler.getFacade().getUnproxiedValue(value):value; // Translate to unproxied value
+
         if(this._target.has(value)) { // No change?
             return this;
         }
@@ -73,6 +79,7 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
     }
 
     delete(value: T): boolean {
+        value = this._watchedProxyHandler?this._watchedProxyHandler.getFacade().getUnproxiedValue(value):value; // Translate to unproxied value
         const result = Set.prototype.delete.apply(this._target, [value]); // this.delete(value); receiver for .delete must be the real/nonproxied Set
         if(result) { // deleted?
             runAndCallListenersOnce_after(this._target, (callListeners) => {
@@ -198,6 +205,7 @@ export class WatchedSet_for_WatchedProxyHandler<T> extends Set<T> implements For
     }
 
     has(value: T): boolean {
+        value = this._watchedProxyHandler.getFacade().getUnproxiedValue(value);
         const result = this._target.has(value);
 
         const read = new RecordedSet_has(value, result);

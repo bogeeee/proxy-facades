@@ -259,6 +259,10 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
         this.facade._afterReadListeners.forEach(l => l(read)); // Inform listeners
     }
 
+    getFacade() {
+        return this.facade;
+    }
+
     get (fake_target:object, key:string | symbol, receiver:any) {
         const target = this.target;
         const thisHandler = this;

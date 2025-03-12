@@ -1,5 +1,6 @@
 import {WatchedProxyHandler} from "./watchedProxyFacade";
 import {arraysAreEqualsByPredicateFn, read, throwError} from "./Util";
+import {ProxyFacade} from "./proxyFacade";
 
 export type ObjKey = string | symbol;
 
@@ -37,6 +38,12 @@ export type Clazz = {
  * For use in proxy and direct
  */
 export interface DualUseTracker<T> {
+
+    /**
+     * Will return the handler when called through the handler
+     */
+    get _watchedProxyHandler(): IWatchedProxyHandler_common | undefined;
+
     /**
      * The original (unproxied) object
      */
@@ -166,6 +173,8 @@ export interface IWatchedProxyHandler_common {
      * @param read
      */
     fireAfterRead(read: RecordedReadOnProxiedObject): void;
+
+    getFacade(): ProxyFacade<any>
 }
 
 export interface ForWatchedProxyHandler<T> extends DualUseTracker<T> {

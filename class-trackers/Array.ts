@@ -1,7 +1,7 @@
 import {
     ClassTrackingConfiguration,
     DualUseTracker,
-    ForWatchedProxyHandler,
+    ForWatchedProxyHandler, IWatchedProxyHandler_common,
     ObjKey,
     RecordedRead,
     RecordedReadOnProxiedObject,
@@ -40,6 +40,9 @@ export class WriteTrackedArray<T> extends Array<T> implements DualUseTracker<Arr
 
     // TODO: In the future, implement more fine granular change listeners that act on change of a certain index.
 
+    get _watchedProxyHandler(): IWatchedProxyHandler_common | undefined {
+        return undefined;
+    }
 
     protected _fireAfterUnspecificWrite() {
         runAndCallListenersOnce_after(this._target, (callListeners) => {
