@@ -282,7 +282,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
                 if(propOnSupervisor !== undefined) { // Supervisor class is responsible for the property (or method) ?
                     //@ts-ignore
                     if(propOnSupervisor.get) { // Prop is a getter?
-                        return this.facade.getProxyFor(this.facade.getProxyFor(propOnSupervisor.get.apply(this.proxy)));
+                        return this.facade.getProxyFor(propOnSupervisor.get.apply(this.proxy));
                     }
                     if(propOnSupervisor.set) { // Prop is a setter ?
                         throw new Error("setters not yet implemented")
