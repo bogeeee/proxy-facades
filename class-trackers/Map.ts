@@ -430,8 +430,5 @@ export const config = new class extends ClassTrackingConfiguration {
      */
     readOnlyFields = new Set<keyof Map<unknown,unknown>>(["size"]) as Set<ObjKey>;
 
-    /**
-     * Default, if not listed as high-level method
-     */
-    eceiverMustBeNonProxied = true;
+    receiverMustBeNonProxied = true;
 }
