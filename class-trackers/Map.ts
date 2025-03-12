@@ -322,7 +322,7 @@ export class RecordedMapEntriesRead extends RecordedReadOnProxiedObject {
 }
 
 export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implements ForWatchedProxyHandler<Map<K, V>> {
-    get _WatchedProxyHandler(): WatchedProxyHandler {
+    get _watchedProxyHandler(): WatchedProxyHandler {
         throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the handler when called through the handler
     }
 
@@ -332,7 +332,7 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
 
     protected _fireAfterEntriesRead() {
         let recordedMapEntriesRead = new RecordedMapEntriesRead([...this._target.entries()]);
-        this._WatchedProxyHandler?.fireAfterRead(recordedMapEntriesRead);
+        this._watchedProxyHandler?.fireAfterRead(recordedMapEntriesRead);
     }
 
     /**
@@ -347,7 +347,7 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
         const result = this._target.get(key);
 
         const read = new RecordedMap_get(key, keyExists, result);
-        this._WatchedProxyHandler?.fireAfterRead(read);
+        this._watchedProxyHandler?.fireAfterRead(read);
 
         return result;
     }
@@ -356,7 +356,7 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
         const result = this._target.has(key);
 
         const read = new RecordedMap_has(key, result);
-        this._WatchedProxyHandler?.fireAfterRead(read);
+        this._watchedProxyHandler?.fireAfterRead(read);
 
         return result;
     }
@@ -365,7 +365,7 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
         const result = this._target.values();
 
         let recordedMapValuesRead = new RecordedMapValuesRead([...result]);
-        this._WatchedProxyHandler?.fireAfterRead(recordedMapValuesRead);
+        this._watchedProxyHandler?.fireAfterRead(recordedMapValuesRead);
 
         return result;
     }
@@ -380,7 +380,7 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
         const result = this._target.keys();
 
         let recordedMapKeysRead = new RecordedMapKeysRead([...result]);
-        this._WatchedProxyHandler?.fireAfterRead(recordedMapKeysRead);
+        this._watchedProxyHandler?.fireAfterRead(recordedMapKeysRead);
 
         return result;
     }
@@ -402,7 +402,7 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
         const result = this._target.size;
 
         let recordedMapKeysRead = new RecordedMapKeysRead([...this._target.keys()]); // TODO: RecordedMapSizeRead
-        this._WatchedProxyHandler?.fireAfterRead(recordedMapKeysRead);
+        this._watchedProxyHandler?.fireAfterRead(recordedMapKeysRead);
 
         return result;
     }

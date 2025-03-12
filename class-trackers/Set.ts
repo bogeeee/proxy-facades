@@ -177,7 +177,7 @@ export class RecordedSetValuesRead extends RecordedReadOnProxiedObject {
 }
 
 export class WatchedSet_for_WatchedProxyHandler<T> extends Set<T> implements ForWatchedProxyHandler<Set<T>> {
-    get _WatchedProxyHandler(): WatchedProxyHandler {
+    get _watchedProxyHandler(): WatchedProxyHandler {
         throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the handler when called through the handler
     }
 
@@ -187,7 +187,7 @@ export class WatchedSet_for_WatchedProxyHandler<T> extends Set<T> implements For
 
     protected _fireAfterValuesRead() {
         let recordedSetValuesRead = new RecordedSetValuesRead([...this._target]);
-        this._WatchedProxyHandler?.fireAfterRead(recordedSetValuesRead);
+        this._watchedProxyHandler?.fireAfterRead(recordedSetValuesRead);
     }
 
     /**
@@ -201,7 +201,7 @@ export class WatchedSet_for_WatchedProxyHandler<T> extends Set<T> implements For
         const result = this._target.has(value);
 
         const read = new RecordedSet_has(value, result);
-        this._WatchedProxyHandler?.fireAfterRead(read);
+        this._watchedProxyHandler?.fireAfterRead(read);
 
         return result;
     }

@@ -172,7 +172,7 @@ export interface ForWatchedProxyHandler<T> extends DualUseTracker<T> {
     /**
      * Will return the handler when called through the handler
      */
-    get _WatchedProxyHandler(): IWatchedProxyHandler_common;
+    get _watchedProxyHandler(): IWatchedProxyHandler_common;
 
     /**
      * The original (unproxied) object

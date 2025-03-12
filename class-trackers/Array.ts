@@ -144,7 +144,7 @@ export class RecordedArrayValuesRead extends RecordedReadOnProxiedObject {
  * Patches methods / accessors
  */
 export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements ForWatchedProxyHandler<Array<T>> {
-    get _WatchedProxyHandler(): WatchedProxyHandler {
+    get _watchedProxyHandler(): WatchedProxyHandler {
         throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the handler when called through the handler
     }
 
@@ -154,7 +154,7 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
 
     protected _fireAfterValuesRead() {
         let recordedArrayValuesRead = new RecordedArrayValuesRead([...this._target]);
-        this._WatchedProxyHandler?.fireAfterRead(recordedArrayValuesRead);
+        this._watchedProxyHandler?.fireAfterRead(recordedArrayValuesRead);
     }
 
     /**
