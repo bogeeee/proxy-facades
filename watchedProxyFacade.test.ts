@@ -895,6 +895,8 @@ describe('WatchedProxyFacade record read and watch it', () => {
                     expect(result.b).toBe("b")
 
                     expect(result.me === obj).toBeTruthy(); // Expect to someFuturisticMethod to receive the proper "this"
+
+                    (obj as any).someFuturisticMethod("a", "b"); // Call that again, so the last read corresponds with the writerFn
                 } finally {
                     //@ts-ignore
                     delete Array.prototype.someFuturisticMethod;

@@ -323,7 +323,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
         function trapForGenericReaderMethod(this:object, ...args: unknown[]) {
             const callResult = origMethod!.apply(receiverMustBeNonProxied?target:this, args); // call original method:
             thisHandler.fireAfterRead(new RecordedUnspecificRead());
-            return callResult;
+            return thisHandler.facade.getProxyFor(callResult);
         }
         /**
          * Fires a RecordedUnspecificRead and calls the afterUnspecificWrite listeners
@@ -335,7 +335,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
                 callListeners(writeListenersForObject.get(target)?.afterUnspecificWrite); // Call listeners
                 callListeners(writeListenersForObject.get(target)?.afterAnyWrite_listeners); // Call listeners
                 thisHandler.fireAfterRead(new RecordedUnspecificRead());
-                return callResult;
+                return thisHandler.facade.getProxyFor(callResult);
             });
         }
         /**
