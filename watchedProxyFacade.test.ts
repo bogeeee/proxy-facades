@@ -1271,7 +1271,8 @@ describe("Returning proxies", () => {
         utils.expectNonProxy(orig[2]);
         proxy.push(proxy[0]); // add again
         utils.expectNonProxy(orig[3]);
-        utils.expectProxy(orig.pop()!);
+        utils.expectProxy(proxy.pop()!);
+        utils.expectNonProxy(orig.pop()!);
     })
 
 
