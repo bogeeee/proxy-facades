@@ -11,6 +11,7 @@ import {ProxyFacade} from "./proxyFacade";
 import exp from "constants";
 import {fail} from "assert";
 import {RecordedArrayValuesRead} from "./class-trackers/Array";
+import {RecordedMapEntriesRead} from "./class-trackers/Map";
 
 beforeEach(() => {
 
@@ -551,8 +552,8 @@ describe('WatchedProxyFacade record read and watch it', () => {
                             origObj = new WatchedProxyFacade().getProxyFor(origObj);
                         }
                         const proxy = watchedProxyFacade.getProxyFor(origObj);
-                        let reads: RecordedPropertyRead[] = [];
-                        watchedProxyFacade.onAfterRead(r => reads.push(r as RecordedPropertyRead));
+                        let reads: RecordedRead[] = [];
+                        watchedProxyFacade.onAfterRead(r => reads.push(r));
                         reads = [];
                         testSetup.readerFn!(proxy);
                         expect(reads.length).toBeGreaterThan(0);
@@ -807,7 +808,7 @@ describe('WatchedProxyFacade record read and watch it', () => {
         });
     }
 
-    const arrayIteratorFns: {readerFn: ((arr: Array<unknown>) => void), skipTestReadsAreEqual?: boolean, pickRead?: Clazz}[] = [{readerFn: arr => {for(const val of arr) read(val)}}, {readerFn:arr => read(arr.keys()), skipTestReadsAreEqual: true}, {readerFn:arr => read(arr.values())}, {readerFn:arr => read(arr.entries())}, {readerFn:arr => arr.forEach(v => read(v)), pickRead: RecordedArrayValuesRead}];
+    const arrayIteratorFns: {readerFn: ((arr: Array<unknown>) => void), skipTestReadsAreEqual?: boolean, pickRead?: Clazz}[] = [{readerFn: arr => {for(const val of arr) read(val)}, pickRead: RecordedArrayValuesRead}, {readerFn:arr => read(arr.keys()), skipTestReadsAreEqual: true}, {readerFn:arr => read(arr.values())}, {readerFn:arr => read(arr.entries())}, {readerFn:arr => arr.forEach(v => read(v)), pickRead: RecordedArrayValuesRead}];
     const arrayChangeFns = [(arr: Array<unknown>) => {arr.push("b")}, (arr:Array<unknown>) => {arr[1] = 123}, (arr:Array<unknown>) => arr.pop(), (arr: Array<unknown>) => arr[4] = "new", (arr: Array<unknown>) => arr[6] = "new", (arr: Array<unknown>) => deleteProperty(arr, 0)];
     // Value iteration:
     for(const it of arrayIteratorFns) {
@@ -1006,14 +1007,16 @@ describe('WatchedProxyFacade record read and watch it', () => {
             }
         }
 
-        const iterateMapValuesFns: ((map: Map<unknown, unknown>) => void)[] = [map => map.values(), map => map.forEach(x => read(x)), map => {for(const o of map) read(o)}];
-        for(const readerFn of iterateMapValuesFns) {
+        const iterateMapValuesFns: {readerFn: ((map: Map<unknown, unknown>) => void), skipTestReadsAreEqual?: boolean, pickRead?: Clazz}[] = [{readerFn:map => map.values()}, {readerFn:map => map.forEach(x => read(x))}, {readerFn:map => {for(const o of map) read(o)}, pickRead: RecordedMapEntriesRead}];
+        for(const it of iterateMapValuesFns) {
             for(const writerFn of changeMapFns) {
-                testRecordReadAndWatch<Map<unknown, unknown>>(`Iterate map values: ${fnToString(readerFn)} with ${fnToString(writerFn)}`, () => {
+                testRecordReadAndWatch<Map<unknown, unknown>>(`Iterate map values: ${fnToString(it.readerFn)} with ${fnToString(writerFn)}`, () => {
                     return {
                         origObj: createOrigMap(),
-                        readerFn,
+                        readerFn: it.readerFn,
                         writerFn,
+                        skipTestReadsAreEqual: it.skipTestReadsAreEqual,
+                        pickRead: it.pickRead,
                     }
                 });
             }
