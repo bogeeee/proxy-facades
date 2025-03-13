@@ -356,7 +356,7 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
         const read = new RecordedMap_get(key, keyExists, result);
         this._watchedProxyHandler?.fireAfterRead(read);
 
-        return result;
+        return this._watchedProxyHandler.getFacade().getProxyFor(result);
     }
 
     has(key: K): boolean {
