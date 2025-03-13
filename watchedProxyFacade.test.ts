@@ -1422,7 +1422,7 @@ describe("Returning proxies", () => {
         utils.expectNonProxy(origSet.keys().next().value!);
         utils.expectNonProxy(origSet.values().next().value!);
         utils.expectProxy(proxyedSet.values().next().value!);
-        utils.expectProxy(proxyedSet.entries().next().value!);
+        utils.expectProxy(proxyedSet.entries().next().value[1]!);
         utils.expectProxy([...proxyedSet][0]);
 
         expect(proxyedSet.has(storedObjectProxy)).toBeTruthy()
