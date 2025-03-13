@@ -234,6 +234,12 @@ export abstract class ClassTrackingConfiguration {
     trackSettingObjectProperties=false;
 
     /**
+     * Wrap the results of methods which are not in the readTracker or changeTracker in proxies
+     * Take caution when enabling this. It is not always a good idea. I.e. Map#entries() return new intermediates arrays [] and these will then also be proxied and result in a false positive something-has-changed detection when comparing recorded Reads.
+     */
+    proxyUnhandledMethodResults=false
+
+    /**
      * Lists read and writeTracker as far as they're present
      */
     getTrackerClasses(): Clazz[] {
