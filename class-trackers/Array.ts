@@ -195,7 +195,7 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
     shift(...args: any[]) {
         return runAndCallListenersOnce_after(this._target, (callListeners) => {
             //@ts-ignore
-            const result = this._target.shift(...args);
+            const result = super.shift(...args);
             callListeners(getWriteListenersForObject(this._target)?.afterChangeOwnKeys_listeners);
             callListeners(getWriteListenersForObject(this._target)?.afterUnspecificWrite);
             callListeners(getWriteListenersForObject(this._target)?.afterAnyWrite_listeners);
@@ -219,7 +219,7 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
     pop(...args: any[]): T | undefined {
         return runAndCallListenersOnce_after(this._target, (callListeners) => {
             //@ts-ignore
-            const result = this._target.pop(...args);
+            const result = super.pop(...args);
             callListeners(getWriteListenersForObject(this._target)?.afterChangeOwnKeys_listeners);
             callListeners(getWriteListenersForObject(this._target)?.afterUnspecificWrite);
             callListeners(getWriteListenersForObject(this._target)?.afterAnyWrite_listeners);
