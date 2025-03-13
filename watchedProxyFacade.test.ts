@@ -1422,7 +1422,7 @@ describe("Returning proxies", () => {
         utils.expectNonProxy(origSet.keys().next().value!);
         utils.expectNonProxy(origSet.values().next().value!);
         utils.expectProxy(proxyedSet.values().next().value!);
-        utils.expectProxy(proxyedSet.entries().next().value[1]!);
+        utils.expectProxy(proxyedSet.entries().next().value![1]);
         utils.expectProxy([...proxyedSet][0]);
 
         expect(proxyedSet.has(storedObjectProxy)).toBeTruthy()
@@ -1491,6 +1491,21 @@ describe("Returning proxies", () => {
         expect(origMap.size).toEqual(0);
 
     })
+});
+
+describe("Iterators", () => {
+    // Mostly already tested by the "Returning proxies" tests
+    test("Iterators with return should not error", () => {
+        const orig = [{t:"a"}, {t:"b"}, {t:"c"}];
+        const watchedProxyFacade = new WatchedProxyFacade();
+        const proxy = watchedProxyFacade.getProxyFor(orig);
+        for(const o of proxy.values()) {
+            break;
+        }
+        const iterator = proxy.values();
+        iterator.next();
+        //iterator.return!(); // Ok, seems like there is no return method available, so this test is useless
+    });
 });
 
 function fnToString(fn: (...args: any[]) => unknown) {
