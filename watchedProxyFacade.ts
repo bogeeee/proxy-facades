@@ -291,7 +291,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
                         typeof propOnSupervisor.value === "function" || throwError(`Accessing supervisor's plain property: ${String(key)}`); // validity check
                         const supervisorMethod = propOnSupervisor.value;
                         return function withProxiedResult(this:unknown, ...args: unknown[]) {
-                            return thisHandler.facade.getProxyFor(supervisorMethod.apply(this, args)); // Generally proxying the result is still not always a good idea. I.e. Map#entries() return new intermediates arrays [] and these will then also be proxied and result in a false positive something-has-changed detection when comparing recorded Reads. It's only an example and Map#entries is not handled by this line luckily
+                            return thisHandler.facade.getProxyFor(supervisorMethod.apply(this, args)); // Generally proxying the result is still not always a good idea. I.e. Map#entries() return new intermediates arrays [] and these will then also be proxied and result in a false positive something-has-changed detection when comparing recorded Reads.
                         }
                     }
                 }
@@ -325,7 +325,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
             if(thisHandler.trackingConfig?.trackTreads !== false) { // not explicitly disabled ?
                 thisHandler.fireAfterRead(new RecordedUnspecificRead());
             }
-            return thisHandler.facade.getProxyFor(callResult); // Generally proxying the result is still not always a good idea. I.e. Map#entries() return new intermediates arrays [] and these will then also be proxied and result in a false positive something-has-changed detection when comparing recorded Reads. It's only an example and Map#entries is not handled by this line luckily
+            return thisHandler.facade.getProxyFor(callResult); // Generally proxying the result is still not always a good idea. I.e. Map#entries() return new intermediates arrays [] and these will then also be proxied and result in a false positive something-has-changed detection when comparing recorded Reads. It's only an example and Map#entries is not handled by this line
         }
         /**
          * Fires a RecordedUnspecificRead and calls the afterUnspecificWrite listeners
@@ -339,7 +339,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
                 if(thisHandler.trackingConfig?.trackTreads !== false) { // not explicitly disabled ?
                     thisHandler.fireAfterRead(new RecordedUnspecificRead());
                 }
-                return thisHandler.facade.getProxyFor(callResult); // Generally proxying the result is still not always a good idea. I.e. Map#entries() return new intermediates arrays [] and these will then also be proxied and result in a false positive something-has-changed detection when comparing recorded Reads. It's only an example and Map#entries is not handled by this line luckily
+                return thisHandler.facade.getProxyFor(callResult); // Generally proxying the result is still not always a good idea. I.e. Map#entries() return new intermediates arrays [] and these will then also be proxied and result in a false positive something-has-changed detection when comparing recorded Reads. It's only an example and Map#entries is not handled by this line
             });
         }
         /**
