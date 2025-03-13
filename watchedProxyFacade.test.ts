@@ -4,7 +4,7 @@ import {
     WatchedProxyFacade
 } from "./watchedProxyFacade";
 import _ from "underscore"
-import {arraysAreEqualsByPredicateFn, isObject, visitReplace} from "./Util";
+import {arraysAreEqualsByPredicateFn, isObject, read, visitReplace} from "./Util";
 import {Clazz, ObjKey, RecordedRead, recordedReadsArraysAreEqual} from "./common";
 import {deleteProperty, installWriteTracker} from "./globalWriteTracking";
 import {ProxyFacade} from "./proxyFacade";
@@ -489,6 +489,37 @@ describe('WatchedProxyFacade tests', () => {
         const sampleGraph = createSampleObjectGraph();
         let watchedProxyFacade = new WatchedProxyFacade();
         const proxy = watchedProxyFacade.getProxyFor(sampleGraph);
+    });
+
+
+    test("Created independant objects inside user methods should not fire reads", () => {
+        class UsersClass {
+            childObject = {prop: "childObjectsValue"}
+
+            getNewObject() {
+                return {
+
+                }
+            }
+
+            getNewArray() {
+                return []
+            }
+        }
+
+        const facade = new WatchedProxyFacade();
+        let thereWasAread = false;
+        facade.onAfterRead(() => {
+            thereWasAread = true;
+        })
+        const orig = new UsersClass();
+        const proxy = facade.getProxyFor(orig);
+
+        read(proxy.getNewObject());
+        expect(thereWasAread).toBeFalsy();
+
+        read(proxy.getNewArray());
+        expect(thereWasAread).toBeFalsy();
     });
 
     // TODO: Does it work when creating the proxy, **after** the write tracker has been installed?
