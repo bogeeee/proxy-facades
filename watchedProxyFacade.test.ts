@@ -1199,7 +1199,37 @@ describe('WatchedProxyFacade integrity', () => {
 });
 
 describe("Returning proxies", () => {
-    class WgUtils {
+    function testExpectOperationToReturnProxy<T extends object>(mkOrig: () => T, operation: (o: T) => object, expectProxy = true) {
+        test(`Expect result of ${fnToString(operation)} to ${expectProxy?"":"not "}be a proxy`, () => {
+            {
+                const watchedProxyFacade = new WatchedProxyFacade();
+                const util = new WgUtil(watchedProxyFacade);
+                const orig = mkOrig();
+                const proxy = watchedProxyFacade.getProxyFor(orig);
+
+                if(expectProxy) {
+                    util.expectProxy(operation(proxy));
+                }
+                else {
+                    util.expectNonProxy(operation(proxy));
+                }
+            }
+
+            {
+                const watchedProxyFacade = new WatchedProxyFacade();
+                const util = new WgUtil(watchedProxyFacade);
+                const orig = mkOrig();
+                const proxy = watchedProxyFacade.getProxyFor(orig);
+                util.expectNonProxy(operation(orig));
+            }
+        })
+    }
+
+    function testExpectOperationToReturnNonProxy<T extends object>(mkOrig: () => T, operation: (o: T) => object, expectProxy = true) {
+        return testExpectOperationToReturnProxy(mkOrig, operation, false);
+    }
+
+    class WgUtil {
         watchedProxyFacade: WatchedProxyFacade
 
         constructor(watchedProxyFacade: WatchedProxyFacade) {
@@ -1221,7 +1251,7 @@ describe("Returning proxies", () => {
 
     test("Object properties should be proxies", () => {
         const watchedProxyFacade = new WatchedProxyFacade();
-        const utils = new WgUtils(watchedProxyFacade);
+        const utils = new WgUtil(watchedProxyFacade);
 
         const orig = {
             prop: {child: "initialValue"} as object,
@@ -1272,7 +1302,7 @@ describe("Returning proxies", () => {
 
     test("User methods should return proxies", () => {
         const watchedProxyFacade = new WatchedProxyFacade();
-        const utils = new WgUtils(watchedProxyFacade);
+        const utils = new WgUtil(watchedProxyFacade);
 
         const orig = {
             someObj: {some: "value"},
@@ -1294,7 +1324,7 @@ describe("Returning proxies", () => {
 
     test("Array should return proxies", () => {
         const watchedProxyFacade = new WatchedProxyFacade();
-        const utils = new WgUtils(watchedProxyFacade);
+        const utils = new WgUtil(watchedProxyFacade);
 
         const obj1 = {};
         const obj2 = {};
@@ -1302,6 +1332,14 @@ describe("Returning proxies", () => {
         const proxy = watchedProxyFacade.getProxyFor(orig);
         utils.expectProxy(proxy);
         utils.expectProxy(proxy[0]);
+
+        const obj1Proxy = watchedProxyFacade.getProxyFor(obj1);
+        expect(proxy.includes(obj1Proxy)).toBeTruthy();
+        expect(proxy.indexOf(obj1Proxy) >=0).toBeTruthy();
+        expect(proxy.lastIndexOf(obj1Proxy) >=0).toBeTruthy();
+
+        //expect(proxy.includes(obj1)).toBeTruthy(); // Questionable if this should work. It's rather cleaner and more consistent if it doesn't
+
         proxy.push({x: "123"})
         utils.expectProxy(proxy[2]);
         utils.expectNonProxy(orig[2]);
@@ -1318,12 +1356,40 @@ describe("Returning proxies", () => {
         utils.expectNonProxy(orig.pop()!);
     })
 
-
-
+    testExpectOperationToReturnProxy(() => [{}], (arr) => arr[0])
+    testExpectOperationToReturnProxy(() => [{}], (arr) => arr.pop()!)
+    testExpectOperationToReturnProxy(() => [{}], (arr) => arr.shift()!)
+    testExpectOperationToReturnProxy(() => [{}], (arr) => arr.at(0)!)
+    testExpectOperationToReturnNonProxy(() => [{}], (arr) => arr.concat([{}]))
+    testExpectOperationToReturnProxy(() => [{}], (arr) => arr.concat([{}]).at(0)! as object)
+    testExpectOperationToReturnNonProxy(() => [{}], (arr) => arr.concat([{}]).at(1)! as object) // Element 1 is the concatenated one and still should be a non-proxy, cause it is not reachable by orig
+    testExpectOperationToReturnProxy(() => [{t:"a"}, {t:"b"}, {t:"c"}, {t:"d"}, {t:"e"}], (arr) => arr.copyWithin(0, 3, 4))
+    testExpectOperationToReturnProxy(() => [{t:"a"}, {t:"b"}, {t:"c"}, {t:"d"}, {t:"e"}], (arr) => arr.copyWithin(0, 3, 4).at(0)!)
+    testExpectOperationToReturnProxy(() => [{t:"a"}, {t:"b"}, {t:"c"}], (arr) => arr.filter(x => x.t === "a")[0])
+    testExpectOperationToReturnProxy(() => [{t:"a"}], (arr) => {let seen: any; arr.filter(x => seen = x); return seen})
+    testExpectOperationToReturnProxy(() => [{t:"a"}], (arr) => {let seen: any; arr.some(x => seen = x); return seen})
+    testExpectOperationToReturnProxy(() => [{t:"a"}], (arr) => {let seen: any; arr.find(x => seen = x); return seen})
+    testExpectOperationToReturnProxy(() => [{t:"a"}], (arr) => {let seen: any; arr.findLast(x => seen = x); return seen})
+    testExpectOperationToReturnProxy(() => [{t:"a"}], (arr) => {let seen: any; arr.findIndex(x => seen = x); return seen})
+    testExpectOperationToReturnProxy(() => [{t:"a"}], (arr) => {let seen: any; arr.findLastIndex(x => seen = x); return seen})
+    testExpectOperationToReturnProxy(() => [{t:"a"}], (arr) => {let seen: any; arr.map(x => seen = x); return seen})
+    testExpectOperationToReturnProxy(() => [{t:"a"}, {t:"b"}, {t:"c"}], (arr) => arr.find(x => x.t === "a")!)
+    testExpectOperationToReturnProxy(() => [{t:"a"}, {t:"b"}, {t:"c"}, [{t:"d"}, {t:"e"}]], arr => arr.flat()[0]);
+    testExpectOperationToReturnProxy(() => [{t:"a"}, {t:"b"}, {t:"c"}, [{t:"d"}, {t:"e"}]], arr => arr.flat()[3]);
+    testExpectOperationToReturnProxy(() => [{t:"a"}, {t:"b"}, {t:"c"}], (arr) => arr.reverse())
+    testExpectOperationToReturnProxy(() => [{t:"a"}, {t:"b"}, {t:"c"}], (arr) => {arr.reverse(); return arr[2]});
+    testExpectOperationToReturnNonProxy(() => [{t:"a"}, {t:"b"}, {t:"c"}, {t:"d"}, {t:"e"}], arr => arr.slice(2,5))
+    testExpectOperationToReturnProxy(() => [{t:"a"}, {t:"b"}, {t:"c"}, {t:"d"}, {t:"e"}], arr => arr.slice(2,5)[2])
+    testExpectOperationToReturnProxy(() => [{},{},{}], arr => arr.values().next().value!)
+    testExpectOperationToReturnProxy(() => [{},{},{}], arr => [...arr.values()][2])
+    testExpectOperationToReturnProxy(() => [{},{},{}], arr => [...arr][2]) // test Symbol.iterator()
+    testExpectOperationToReturnProxy(() => [{},{},{}], arr => {let seen: any; arr[Symbol.iterator]().forEach(x => seen = x); return seen}) // test Symbol.iterator() + it's forEach high-level method
+    testExpectOperationToReturnProxy(() => [{},{},{}], arr => arr.entries().next().value![1]);
+    testExpectOperationToReturnProxy(() => [{},{},{}], arr => [...arr.entries()][0][1]);
 
     test("Setting properties on an object should not self-infect", () => {
         const watchedProxyFacade = new WatchedProxyFacade();
-        const utils = new WgUtils(watchedProxyFacade);
+        const utils = new WgUtil(watchedProxyFacade);
 
         const orig = {
             someObj: {some: "value"} as object,
@@ -1345,7 +1411,7 @@ describe("Returning proxies", () => {
 
     test("Proxies with Set", () => {
         const watchedProxyFacade = new WatchedProxyFacade();
-        const utils = new WgUtils(watchedProxyFacade);
+        const utils = new WgUtil(watchedProxyFacade);
 
         const origSet = new Set<object>();
         const proxyedSet = watchedProxyFacade.getProxyFor(origSet);
@@ -1383,7 +1449,7 @@ describe("Returning proxies", () => {
 
     test("Proxies with Map", () => {
         const watchedProxyFacade = new WatchedProxyFacade();
-        const utils = new WgUtils(watchedProxyFacade);
+        const utils = new WgUtil(watchedProxyFacade);
 
         const origMap = new Map<object,object>();
         const proxyedMap = watchedProxyFacade.getProxyFor(origMap);
