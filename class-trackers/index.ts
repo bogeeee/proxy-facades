@@ -2,13 +2,13 @@ import {ClassTrackingConfiguration, Clazz} from "../common";
 import {config as arrayConfig} from "./Array"
 import {config as setConfig} from "./Set"
 import {config as mapConfig} from "./Map"
-import {IteratorConfig, IteratorResultWrapperConfig} from "./Iterator"
+import {IteratorConfig} from "./Iterator"
 import {classIsSubclassOf, throwError} from "../Util";
 
 /**
  * Register configurations here:
  */
-export const classTrackingConfigurations: ClassTrackingConfiguration[] = [arrayConfig, setConfig, mapConfig, IteratorConfig, IteratorResultWrapperConfig];
+export const classTrackingConfigurations: ClassTrackingConfiguration[] = [arrayConfig, setConfig, mapConfig, IteratorConfig];
 
 const cache_clazzToConfig = new WeakMap<Clazz, ClassTrackingConfiguration | undefined>();
 

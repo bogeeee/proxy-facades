@@ -1,7 +1,7 @@
 import {
     ClassTrackingConfiguration,
     DualUseTracker,
-    ForWatchedProxyHandler, IWatchedProxyHandler_common,
+    ForWatchedProxyHandler, IWatchedProxyHandler_common, makeIteratorTranslateValue,
     ObjKey,
     RecordedRead,
     RecordedReadOnProxiedObject,
@@ -170,19 +170,19 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
     values(): ArrayIterator<T> {
         const result = this._target.values();
         this._fireAfterValuesRead();
-        return result;
+        return makeIteratorTranslateValue(result, (value) => this._watchedProxyHandler.getFacade().getProxyFor(value));
     }
 
     entries(): ArrayIterator<[number, T]> {
         const result = this._target.entries();
         this._fireAfterValuesRead();
-        return result;
+        return makeIteratorTranslateValue<[number, T], ArrayIterator<[number, T]>/*strange that TS does not infer the types here*/>(result, ([index,value]) => [index, this._watchedProxyHandler.getFacade().getProxyFor(value)]);
     }
 
     [Symbol.iterator](): ArrayIterator<T> {
         const result = this._target[Symbol.iterator]();
         this._fireAfterValuesRead();
-        return result;
+        return makeIteratorTranslateValue(result, (value) => this._watchedProxyHandler.getFacade().getProxyFor(value));
     }
 
     get length(): number {

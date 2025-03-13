@@ -34,6 +34,9 @@ export type Clazz = {
     new(...args: any[]): unknown
 }
 
+export type GetIteratorValueProxiedFn<T> = (value: T) => T;
+export type IteratorReturningProxiedValue<T> = Iterator<T> & {_getValueProxied: GetIteratorValueProxiedFn<T>}
+
 /**
  * For use in proxy and direct
  */
@@ -256,4 +259,23 @@ export abstract class ClassTrackingConfiguration {
 
 export function recordedReadsArraysAreEqual(a: RecordedRead[], b: RecordedRead[]) {
     return arraysAreEqualsByPredicateFn(a, b, (a, b) => a.equals(b));
+}
+
+/**
+ * Patches the iterator so it runs the value through the translateFn
+ * @param iterator
+ * @param translateFn
+ */
+export function makeIteratorTranslateValue<V, IT extends Iterator<V>>(iterator: IT, translateFn: (value: V) => V): IT {
+    const originalNext = iterator.next;
+
+    function next(this: Iterator<V>, ...args: unknown[]): ReturnType<Iterator<V>["next"]> {
+        const result = originalNext.apply(this, args as [any]);
+        if(!result.done) {
+            result.value = translateFn(result.value);
+        }
+        return result;
+    }
+    iterator.next = next; // Patch iterator
+    return iterator;
 }

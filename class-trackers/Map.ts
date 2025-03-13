@@ -1,7 +1,7 @@
 import {
     AfterWriteListener, ClassTrackingConfiguration,
     DualUseTracker,
-    ForWatchedProxyHandler, IWatchedProxyHandler_common,
+    ForWatchedProxyHandler, IWatchedProxyHandler_common, makeIteratorTranslateValue,
     ObjKey,
     RecordedRead,
     RecordedReadOnProxiedObject,
@@ -375,13 +375,15 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
         let recordedMapValuesRead = new RecordedMapValuesRead([...result]);
         this._watchedProxyHandler?.fireAfterRead(recordedMapValuesRead);
 
-        return result;
+        return makeIteratorTranslateValue(result, (value) => this._watchedProxyHandler.getFacade().getProxyFor(value));
     }
 
     entries(): MapIterator<[K, V]> {
         const result = this._target.entries();
         this._fireAfterEntriesRead();
-        return result;
+
+        const facade = this._watchedProxyHandler.getFacade();
+        return makeIteratorTranslateValue<[K, V], MapIterator<[K, V]>/*strange that TS does not infer the types here*/>(result, ([key,value]) => [facade.getProxyFor(key), facade.getProxyFor(value)]);
     }
 
     keys(): MapIterator<K> {
@@ -390,7 +392,7 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
         let recordedMapKeysRead = new RecordedMapKeysRead([...result]);
         this._watchedProxyHandler?.fireAfterRead(recordedMapKeysRead);
 
-        return result;
+        return makeIteratorTranslateValue(result, (key) => this._watchedProxyHandler.getFacade().getProxyFor(key));
     }
 
     forEach(callbackfn: (value: V, key: K, map: Map<K, V>, ...restOfArgs: unknown[]) => void, ...restOfArgs: unknown[]) {
@@ -411,7 +413,9 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
     [Symbol.iterator](): MapIterator<[K, V]> {
         const result = this._target[Symbol.iterator]();
         this._fireAfterEntriesRead();
-        return result;
+
+        const facade = this._watchedProxyHandler.getFacade();
+        return makeIteratorTranslateValue<[K, V], MapIterator<[K, V]>/*strange that TS does not infer the types here*/>(result, ([key,value]) => [facade.getProxyFor(key), facade.getProxyFor(value)]);
     }
 
     get size(): number {

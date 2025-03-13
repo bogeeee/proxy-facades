@@ -1,7 +1,7 @@
 import {
     AfterWriteListener, ClassTrackingConfiguration,
     DualUseTracker,
-    ForWatchedProxyHandler, IWatchedProxyHandler_common,
+    ForWatchedProxyHandler, IWatchedProxyHandler_common, makeIteratorTranslateValue,
     ObjKey,
     RecordedRead,
     RecordedReadOnProxiedObject,
@@ -217,19 +217,21 @@ export class WatchedSet_for_WatchedProxyHandler<T> extends Set<T> implements For
     values(): SetIterator<T> {
         const result = this._target.values();
         this._fireAfterValuesRead();
-        return result;
+        return makeIteratorTranslateValue(result, (value) => this._watchedProxyHandler.getFacade().getProxyFor(value));
     }
 
     entries(): SetIterator<[T, T]> {
         const result = this._target.entries();
         this._fireAfterValuesRead();
-        return result;
+
+        const facade = this._watchedProxyHandler.getFacade();
+        return makeIteratorTranslateValue<[T, T], SetIterator<[T, T]>/*strange that TS does not infer the types here*/>(result, ([value1,value2]) => [facade.getProxyFor(value1), facade.getProxyFor(value2)]);
     }
 
     keys(): SetIterator<T> {
         const result = this._target.keys();
         this._fireAfterValuesRead();
-        return result;
+        return makeIteratorTranslateValue(result, (value) => this._watchedProxyHandler.getFacade().getProxyFor(value));
     }
 
     forEach(callbackfn: (value: T, value2: T, set: Set<T>, ...restOfArgs: unknown[]) => void, ...restOfArgs: unknown[]) {
@@ -250,7 +252,7 @@ export class WatchedSet_for_WatchedProxyHandler<T> extends Set<T> implements For
     [Symbol.iterator](): SetIterator<T> {
         const result = this._target[Symbol.iterator]();
         this._fireAfterValuesRead();
-        return result;
+        return makeIteratorTranslateValue(result, (value) => this._watchedProxyHandler.getFacade().getProxyFor(value));
     }
 
     get size(): number {
