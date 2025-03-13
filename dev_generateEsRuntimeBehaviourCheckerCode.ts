@@ -26,7 +26,15 @@ outputExpecterCode(["a", "b", "b"], (v) => v.toString());
 outputExpecterCode(["a", "b", "c"], (v) => v.unshift("_a","_b"));
 outputExpecterCode(["a", "b", "c","d"], v => v.splice(1,2, "newB", "newC", "newX"))
 outputExpecterCode(["a", "b", "c","d"], v => v.copyWithin(3, 1,3))
-outputExpecterCode(["a", "b", "c","d"], v => v.reverse())
+outputExpecterCode(["a", "b", "c","d"], v => v.reverse());
+
+// Iterator
+console.log("if([].values().forEach) { // Runtime supports theres iterator functions like forEach, filter, .... ")
+outputExpecterCode(() => ["a", "b", "c"][Symbol.iterator](), it => it.forEach(x => x))
+outputExpecterCode(() => ["a", "b", "c"][Symbol.iterator](), it => it.filter(x => x === "b"))
+outputExpecterCode(() => ["a", "b", "c"][Symbol.iterator](), it => it.take(2));
+outputExpecterCode(() => ["a", "b", "c"][Symbol.iterator](), it => it.toArray());
+console.log("}")
 
 // Set:
 //outputExpecterCode(new Set<string>(["a","b","c"]), v => v.forEach(i => read(i))) // TypeError: Method Set.prototype.forEach called on incompatible receiver #<Set>
@@ -37,18 +45,28 @@ outputExpecterCode(["a", "b", "c","d"], v => v.reverse())
 /**
  *
  */
-function outputExpecterCode<T extends object>(orig: T, fn: (proxy: T) =>  void ) {
-    const origJson = JSON.stringify(orig);
+function outputExpecterCode<T extends object>(orig: T | (() => T), fn: (proxy: T) =>  void ) {
+    let origJS = JSON.stringify(orig);
+    if(typeof orig === "function") {
+        origJS = orig.toString().replace(/\s+/g," ").replace(/^\(\)=>/,"").toString()
+        orig = orig();
+    }
     const usedFields = new Set<string | symbol>();
     const proxy = new Proxy(orig, {
         get(target: T, p: string | symbol, receiver: any): any {
             usedFields.add(p)
+
+            if(p === "next") {
+                //@ts-ignore
+                return (...args: unknown[]) => target.next(...args); // .next() method must run on target, not on proxy
+            }
+
             //@ts-ignore
             return target[p];
         }
     })
     read(fn(proxy));
-    console.log(`expectUsingMethodsOrFields(${origJson}, ${fnToString(fn)}, [${[...usedFields.values()].map(f => typeof f === "string"?`"${f}"`:`${f.toString().replace(/(^Symbol\()|(\)$)/g,"")}`). join(",")}])`)
+    console.log(`expectUsingMethodsOrFields(${origJS}, ${fnToString(fn)}, [${[...usedFields.values()].map(f => typeof f === "string"?`"${f}"`:`${f.toString().replace(/(^Symbol\()|(\)$)/g,"")}`). join(",")}])`)
 
     function fnToString(fn: (...args: any[]) => unknown) {
         return fn.toString().replace(/\s+/g," ").toString();

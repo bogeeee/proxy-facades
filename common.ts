@@ -145,6 +145,12 @@ export function checkEsRuntimeBehaviour() {
     expectUsingMethodsOrFields(["a","b","c","d"], v=>v.splice(1,2,"newB","newC","newX"), ["length","1","2","3"])
     expectUsingMethodsOrFields(["a","b","c","d"], v=>v.copyWithin(3,1,3), ["length","1","0","2","3"])
     expectUsingMethodsOrFields(["a","b","c","d"], v=>v.reverse(), ["length","0","3","1","2"])
+    if([].values().forEach) { // Runtime supports theres iterator functions like forEach, filter, ....
+        expectUsingMethodsOrFields(["a","b","c"][Symbol.iterator](), it=>it.forEach(x=>x), ["forEach","next"])
+        expectUsingMethodsOrFields(["a","b","c"][Symbol.iterator](), it=>it.filter(x=>x==="b"), ["filter","next"])
+        expectUsingMethodsOrFields(["a","b","c"][Symbol.iterator](), it=>it.take(2), ["take","next"])
+        expectUsingMethodsOrFields(["a","b","c"][Symbol.iterator](), it=>it.toArray(), ["toArray","next"])
+    }
 
 
 
@@ -159,6 +165,10 @@ export function checkEsRuntimeBehaviour() {
         const proxy = new Proxy(orig, {
             get(target: T, p: string | symbol, receiver: any): any {
                 usedMethodsOrFields.add(p)
+                if(p === "next") {
+                    //@ts-ignore
+                    return (...args: unknown[]) => target.next(...args); // .next() method must run on target, not on proxy
+                }
                 //@ts-ignore
                 return target[p];
             }
