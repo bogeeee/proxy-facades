@@ -224,6 +224,11 @@ export abstract class ClassTrackingConfiguration {
     receiverMustBeNonProxied=true;
 
     /**
+     * Makes the WatchedProxyFacade's handler also track/fire reads for methods that are not **directly** in the this.readTracker class.
+     */
+    trackTreads=true;
+
+    /**
      * (For Array:) Flags to track setting properties, meaning changes are not only done by calling methods. This will use a Proxy (install a Proxy as Prototype).
      */
     trackSettingObjectProperties=false;

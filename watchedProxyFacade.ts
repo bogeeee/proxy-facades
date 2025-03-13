@@ -322,7 +322,9 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
          */
         function trapForGenericReaderMethod(this:object, ...args: unknown[]) {
             const callResult = origMethod!.apply(receiverMustBeNonProxied?target:this, args); // call original method:
-            thisHandler.fireAfterRead(new RecordedUnspecificRead());
+            if(thisHandler.trackingConfig?.trackTreads !== false) { // not explicitly disabled ?
+                thisHandler.fireAfterRead(new RecordedUnspecificRead());
+            }
             return thisHandler.facade.getProxyFor(callResult);
         }
         /**
@@ -334,7 +336,9 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
                 const callResult = origMethod!.apply(receiverMustBeNonProxied?target:this, args); // call original method:
                 callListeners(writeListenersForObject.get(target)?.afterUnspecificWrite); // Call listeners
                 callListeners(writeListenersForObject.get(target)?.afterAnyWrite_listeners); // Call listeners
-                thisHandler.fireAfterRead(new RecordedUnspecificRead());
+                if(thisHandler.trackingConfig?.trackTreads !== false) { // not explicitly disabled ?
+                    thisHandler.fireAfterRead(new RecordedUnspecificRead());
+                }
                 return thisHandler.facade.getProxyFor(callResult);
             });
         }
@@ -356,7 +360,9 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
                 return result;
             }
         }
-        this.fireAfterRead(new RecordedPropertyRead(key, result)); // Inform listeners
+        if(this.trackingConfig?.trackTreads !== false) { // not explicitly disabled ?
+            this.fireAfterRead(new RecordedPropertyRead(key, result)); // Inform listeners
+        }
         return result;
     }
 
@@ -399,7 +405,9 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
 
     ownKeys(target: object): ArrayLike<string | symbol> {
         const result = Reflect.ownKeys(this.target);
-        this.fireAfterRead(new RecordedOwnKeysRead(result))
+        if(this.trackingConfig?.trackTreads !== false) { // not explicitly disabled ?
+            this.fireAfterRead(new RecordedOwnKeysRead(result))
+        }
         return result;
     }
 
