@@ -522,7 +522,81 @@ describe('WatchedProxyFacade tests', () => {
         expect(thereWasAread).toBeFalsy();
     });
 
-    // TODO: Does it work when creating the proxy, **after** the write tracker has been installed?
+
+    test("Arrays should work normally when when creating the proxy, **after** the write tracker has been installed ", () => {
+        const orig: any[] = ["a", "b",{name: "c"}];
+        installWriteTracker(orig);
+        orig.push({name: "d"});
+        const facade = new WatchedProxyFacade();
+        const proxy = facade.getProxyFor(orig);
+        proxy.push({name: "e"});
+        for(const obj of [proxy, orig]) {
+            expect(Object.keys(obj)).toEqual(["0", "1", "2", "3", "4"]);
+            expect(obj[2].name).toBe("c");
+            expect(obj[3].name).toBe("d");
+            expect(obj[4].name).toBe("e");
+        }
+    })
+
+    test("Sets should work normally when when creating the proxy, **after** the write tracker has been installed ", () => {
+        const itemB = {name: "b"};
+        const itemC = {name: "c"};
+        const itemD = {name: "d"};
+        const itemE = {name: "e"};
+        const orig = new Set<any>(["a", itemB])
+        installWriteTracker(orig);
+        orig.add(itemC);
+        const facade = new WatchedProxyFacade();
+        const proxy = facade.getProxyFor(orig);
+        proxy.add(itemD);
+        proxy.add(facade.getProxyFor(itemE));
+        for(const obj of [proxy, orig]) {
+            expect(obj.size).toBe(5);
+            expect([...obj][1].name).toBe("b");
+            expect([...obj][2].name).toBe("c");
+            expect([...obj][3].name).toBe("d");
+            expect([...obj][4].name).toBe("e");
+        }
+        expect([...orig][4] === itemE).toBeTruthy();
+        expect([...proxy][4] === itemE).toBeFalsy();
+
+    })
+
+    test("Maps should work normally when when creating the proxy, **after** the write tracker has been installed ", () => {
+        const keyB = {key: "b"};
+        const keyC = {key: "c"};
+        const keyD = {key: "d"};
+        const keyE = {key: "e"};
+        
+        const valueB = {value: "b"};
+        const valueC = {value: "c"};
+        const valueD = {value: "d"};
+        const valueE = {value: "e"};
+        const orig = new Map<any,any>([["a","a"], [keyB,valueB]])
+        installWriteTracker(orig);
+        orig.set(keyC, valueC);
+        const facade = new WatchedProxyFacade();
+        const proxy = facade.getProxyFor(orig);
+        proxy.set(keyD, valueD);
+        proxy.set(facade.getProxyFor(keyE), facade.getProxyFor(valueE));
+        for(const obj of [proxy, orig]) {
+            expect(obj.size).toBe(5);
+            expect([...obj][1][0].key).toBe("b");
+            expect([...obj][2][0].key).toBe("c");
+            expect([...obj][3][0].key).toBe("d");
+            expect([...obj][4][0].key).toBe("e");
+
+            expect([...obj][1][1].value).toBe("b");
+            expect([...obj][2][1].value).toBe("c");
+            expect([...obj][3][1].value).toBe("d");
+            expect([...obj][4][1].value).toBe("e");
+        }
+        expect([...orig][4][1] === valueE).toBeTruthy();
+        expect([...proxy][4][1] === valueE).toBeFalsy();
+        expect([...orig][4][0] === keyE).toBeTruthy();
+        expect([...proxy][4][0] === keyE).toBeFalsy();
+
+    })
 });
 
 
