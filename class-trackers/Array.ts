@@ -229,8 +229,6 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
 
     }
 
-    //TODO:    slice(start?: number, end?: number): T[] {}
-
 }
 
 export const config = new class extends ClassTrackingConfiguration {

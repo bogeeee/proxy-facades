@@ -1204,6 +1204,13 @@ describe('WatchedProxyFacade integrity', () => {
 
 
     testWriterConsitency(() => {return {
+        origObj: ["a", "b", "c","d"],
+        writerFn: (obj: string[]) => {
+            expect(obj.slice(1,3)).toEqual(["b","c"]);
+        }}
+    },"array.slice");
+
+    testWriterConsitency(() => {return {
         origObj: ["a", "b", "c"],
         writerFn: (obj: string[]) => {
             expect(obj.unshift("_a","_b")).toBe(5);
