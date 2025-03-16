@@ -168,8 +168,6 @@ describe('ProxyFacade tests', () => {
         const proxy = watchedProxyFacade.getProxyFor(orig);
         expect(proxy.prop).toStrictEqual(orig.prop);
     })
-
-    // TODO: Array, Set and Map's Iterators, keys(), values(), etc. methods must return proxied objects as well
 });
 
 describe('ProxyFacade and installed write tracker tests', () => {
@@ -373,7 +371,7 @@ describe('WatchedProxyFacade tests', () => {
                 return false;
             }
             for(let i = 0;i<a.length;i++) {
-                if(a[i] !== b[i]) { // TODO add option for object instance equality
+                if(a[i] !== b[i]) {
                     return false;
                 }
             }
@@ -1035,8 +1033,6 @@ describe('WatchedProxyFacade record read and watch it', () => {
             writerFn: (obj: string[]) =>  obj.unshift("_a","_b"),
     }});
 
-    // TODO: is the result of i.e. array.unshift a proxy as well?
-
     testRecordReadAndWatch<Set<unknown>>("Set.add", () => {
         const obj: Set<string> = new Set<string>;
         return {
@@ -1149,9 +1145,6 @@ describe('WatchedProxyFacade record read and watch it', () => {
             falseWritesFn: (map) => {map.set("keyA", "valueA")},
         }
     });
-
-    // TODO: self infect / querying if Set/Map has a key should unbox the key. Same for all all values, also arrays and objects!?
-
 
 
     /* Template:
