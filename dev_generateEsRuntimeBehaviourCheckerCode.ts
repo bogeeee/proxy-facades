@@ -29,7 +29,7 @@ outputExpecterCode(["a", "b", "c","d"], v => v.copyWithin(3, 1,3))
 outputExpecterCode(["a", "b", "c","d"], v => v.reverse());
 
 // Iterator
-console.log("if([].values().forEach) { // Runtime supports theres iterator functions like forEach, filter, .... ")
+console.log("if([].values().forEach) { // Runtime supports these iterator functions like forEach, filter, .... ")
 outputExpecterCode(() => ["a", "b", "c"][Symbol.iterator](), it => it.forEach(x => x))
 outputExpecterCode(() => ["a", "b", "c"][Symbol.iterator](), it => it.filter(x => x === "b"))
 outputExpecterCode(() => ["a", "b", "c"][Symbol.iterator](), it => it.take(2));

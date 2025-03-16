@@ -145,7 +145,8 @@ export function checkEsRuntimeBehaviour() {
     expectUsingMethodsOrFields(["a","b","c","d"], v=>v.splice(1,2,"newB","newC","newX"), ["length","1","2","3"])
     expectUsingMethodsOrFields(["a","b","c","d"], v=>v.copyWithin(3,1,3), ["length","1","0","2","3"])
     expectUsingMethodsOrFields(["a","b","c","d"], v=>v.reverse(), ["length","0","3","1","2"])
-    if([].values().forEach) { // Runtime supports theres iterator functions like forEach, filter, ....
+    //@ts-ignore
+    if([].values().forEach) { // Runtime supports these iterator functions like forEach, filter, ....
         expectUsingMethodsOrFields(["a","b","c"][Symbol.iterator](), it=>it.forEach(x=>x), ["forEach","next"])
         expectUsingMethodsOrFields(["a","b","c"][Symbol.iterator](), it=>it.filter(x=>x==="b"), ["filter","next"])
         expectUsingMethodsOrFields(["a","b","c"][Symbol.iterator](), it=>it.take(2), ["take","next"])
