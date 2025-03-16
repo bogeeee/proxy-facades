@@ -53,6 +53,13 @@ export interface DualUseTracker<T> {
     get _target(): T
 }
 
+//@ts-ignore
+export function dualUseTracker_callOrigMethodOnTarget<O extends object, M extends keyof O>(tracker: DualUseTracker<O>, methodName: M, args: unknown[]): ReturnType<O[M]> {
+    const target = tracker._target;
+    const method = tracker._watchedProxyHandler !== undefined?target[methodName]:Object.getPrototypeOf(Object.getPrototypeOf(tracker))[methodName];
+    return method.apply(target, args);
+}
+
 /**
  * Like Object.getOwnPropertyDescriptor. But for all parent classes
  * @param o

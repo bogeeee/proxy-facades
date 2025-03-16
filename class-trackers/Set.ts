@@ -1,5 +1,5 @@
 import {
-    AfterWriteListener, ClassTrackingConfiguration,
+    AfterWriteListener, dualUseTracker_callOrigMethodOnTarget, ClassTrackingConfiguration,
     DualUseTracker,
     ForWatchedProxyHandler, IWatchedProxyHandler_common, makeIteratorTranslateValue,
     ObjKey,
@@ -70,7 +70,7 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
             return this;
         }
         runAndCallListenersOnce_after(this._target, (callListeners) => {
-            const result = Set.prototype.add.apply(this._target, [value]); // this.add(value); receiver for .add must be the real/nonproxied Set
+            const result = dualUseTracker_callOrigMethodOnTarget(this, "add", [value]);
             callListeners(writeListenersForSet.get(this._target)?.afterSpecificValueChanged.get(value));
             callListeners(writeListenersForSet.get(this._target)?.afterAnyValueChanged);
             callListeners(writeListenersForObject.get(this._target)?.afterAnyWrite_listeners);
@@ -80,20 +80,20 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
 
     delete(value: T): boolean {
         value = this._watchedProxyHandler?this._watchedProxyHandler.getFacade().getUnproxiedValue(value):value; // Translate to unproxied value
-        const result = Set.prototype.delete.apply(this._target, [value]); // this.delete(value); receiver for .delete must be the real/nonproxied Set
-        if(result) { // deleted?
-            runAndCallListenersOnce_after(this._target, (callListeners) => {
+        return runAndCallListenersOnce_after(this._target, (callListeners) => {
+            const result = dualUseTracker_callOrigMethodOnTarget(this, "delete", [value]);
+            if(result) { // deleted?
                 callListeners(writeListenersForSet.get(this._target)?.afterSpecificValueChanged.get(value));
                 callListeners(writeListenersForSet.get(this._target)?.afterAnyValueChanged);
                 callListeners(writeListenersForObject.get(this._target)?.afterAnyWrite_listeners);
-            });
-        }
-        return result
+            }
+            return result
+        });
     }
 
     clear() {
         runAndCallListenersOnce_after(this._target, (callListeners) => {
-            Set.prototype.clear.apply(this._target, []); // this.clear(); receiver for .clear must be the real/nonproxied Set
+            const result = dualUseTracker_callOrigMethodOnTarget(this, "clear", []);
             callListeners(writeListenersForSet.get(this._target)?.afterAnyValueChanged);
             callListeners(writeListenersForObject.get(this._target)?.afterUnspecificWrite);
             callListeners(writeListenersForObject.get(this._target)?.afterAnyWrite_listeners);

@@ -1,6 +1,6 @@
 import {
     AfterWriteListener, ClassTrackingConfiguration,
-    DualUseTracker,
+    DualUseTracker, dualUseTracker_callOrigMethodOnTarget,
     ForWatchedProxyHandler, IWatchedProxyHandler_common, makeIteratorTranslateValue,
     ObjKey,
     RecordedRead,
@@ -77,7 +77,7 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
         }
 
         runAndCallListenersOnce_after(this._target, (callListeners) => {
-            const result = Map.prototype.set.apply(this._target, [key, value]); // this.set(key, value); receiver for .set must be the real/nonproxied Map
+            const result = dualUseTracker_callOrigMethodOnTarget(this, "set", [key, value]);
             if(isNewKey) {
                 callListeners(writeListenersForMap.get(this._target)?.afterSpecificKeyAddedOrRemoved.get(key));
                 callListeners(writeListenersForMap.get(this._target)?.afterAnyKeyAddedOrRemoved);
@@ -95,22 +95,22 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
 
     delete(key: K): boolean {
         key = this._watchedProxyHandler?this._watchedProxyHandler.getFacade().getUnproxiedValue(key):key; // Translate to unproxied key
-        const result = Map.prototype.delete.apply(this._target, [key]); // this.delete(key); receiver for .delete must be the real/nonproxied Map
-        if(result) { // deleted?
-            runAndCallListenersOnce_after(this._target, (callListeners) => {
+        return runAndCallListenersOnce_after(this._target, (callListeners) => {
+            const result = dualUseTracker_callOrigMethodOnTarget(this, "delete", [key]);
+            if(result) { // deleted?
                 callListeners(writeListenersForMap.get(this._target)?.afterSpecificKeyAddedOrRemoved.get(key));
                 callListeners(writeListenersForMap.get(this._target)?.afterAnyKeyAddedOrRemoved);
                 callListeners(writeListenersForMap.get(this._target)?.afterSpecificValueChanged.get(key));
                 callListeners(writeListenersForMap.get(this._target)?.afterAnyValueChanged);
                 callListeners(writeListenersForObject.get(this._target)?.afterAnyWrite_listeners);
-            });
-        }
-        return result
+            }
+            return result;
+        });
     }
 
     clear() {
         runAndCallListenersOnce_after(this._target, (callListeners) => {
-            Map.prototype.clear.apply(this._target, []); // this.clear(); receiver for .clear must be the real/nonproxied Map
+            const result = dualUseTracker_callOrigMethodOnTarget(this, "clear", []);
             callListeners(writeListenersForMap.get(this._target)?.afterAnyKeyAddedOrRemoved);
             callListeners(writeListenersForMap.get(this._target)?.afterAnyValueChanged);
             callListeners(writeListenersForObject.get(this._target)?.afterUnspecificWrite);
