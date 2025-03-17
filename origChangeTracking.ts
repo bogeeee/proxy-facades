@@ -46,7 +46,7 @@ export function installChangeTracker(obj: object) {
 }
 
 /**
- * Use this to delete properties on objects that have a write tracker installer. Otherwise they are not deletable and the write tracker cannot track the object's keys modification and inform listeners
+ * Use this to delete properties on objects that have a write tracker installed. Otherwise they are not deletable and the write tracker cannot track the object's keys modification and inform listeners
  * @param obj
  * @param key
  */
