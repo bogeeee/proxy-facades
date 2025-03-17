@@ -778,6 +778,30 @@ describe('WatchedProxyFacade record read and watch it', () => {
             }
         }
 
+        if(provideTestSetup().writerFn && provideTestSetup().readerFn) {
+            test(`${name} proper cleanup of listeners`, () => {
+                const testSetup = provideTestSetup();
+                let watchedProxyFacade = new WatchedProxyFacade();
+                let origObj = testSetup.origObj;
+                const proxy = watchedProxyFacade.getProxyFor(origObj);
+                let reads: RecordedRead[] = [];
+                watchedProxyFacade.onAfterRead(r => reads.push(r));
+                testSetup.readerFn!(proxy);
+                const lastRead = getLastRead(reads, testSetup);
+                let numChanges = 0
+                const changeHandler = vitest.fn(() => {
+                    numChanges++;
+                });
+                lastRead.onChange(changeHandler);
+                testSetup.writerFn!(proxy);
+                expect(numChanges).toBeGreaterThan(0)
+                lastRead.offChange(changeHandler);
+                numChanges = 0;
+                testSetup.writerFn!(proxy);
+                expect(numChanges).toBe(0);
+            });
+        }
+
         function getLastRead(reads: RecordedRead[], testSetup: ReturnType<typeof provideTestSetup>) {
             const r = testSetup.pickRead?reads.filter(r => r instanceof testSetup.pickRead!):reads;
             expect(r.length).toBeGreaterThan(0);
