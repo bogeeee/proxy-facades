@@ -3,7 +3,7 @@
 
 
 import {runAndCallListenersOnce_after} from "./common";
-import {ObjectProxyHandler, writeListenersForObject} from "./origObjectChangeTracking";
+import {ObjectProxyHandler, writeListenersForObject} from "./objectChangeTracking";
 import {getTrackingConfigFor} from "./class-trackers/index";
 
 

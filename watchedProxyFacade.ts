@@ -13,7 +13,7 @@ import {
     RecordedReadOnProxiedObject,
     runAndCallListenersOnce_after,
 } from "./common";
-import {getWriteListenersForObject, writeListenersForObject} from "./origObjectChangeTracking";
+import {getWriteListenersForObject, writeListenersForObject} from "./objectChangeTracking";
 import _ from "underscore"
 import {getTrackingConfigFor} from "./class-trackers/index";
 import {RecordedReadOnProxiedObjectExt} from "./RecordedReadOnProxiedObjectExt";
