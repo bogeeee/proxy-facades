@@ -1,6 +1,6 @@
 import {WatchedProxyHandler} from "./watchedProxyFacade";
 import {arraysAreEqualsByPredicateFn, read, throwError} from "./Util";
-import {ProxyFacade} from "./proxyFacade";
+import {getGlobalOrig, ProxyFacade} from "./proxyFacade";
 
 export type ObjKey = string | symbol;
 
@@ -86,7 +86,7 @@ export type SetterFlags = {
 const runAndCallListenersOnce_after_listeners = new Map<object, Set<() => void>>();
 
 /**
- * Prevents listeners from beeing called twice. Even during the same operation that spans a call stack.
+ * Prevents listeners from beeing called twice. Even during the same operation that spans a call stack (the stack can go through multiple proxy layers)
  * Runs the collectorFn, which can add listeners to the listenersSet. These are then fired *after* collectorFn has run.
  * If this function gets called nested (for the same target) / "spans a call stack", then only after the outermost call will *all* deep collected listeners be fired.
  * <p>
@@ -95,6 +95,7 @@ const runAndCallListenersOnce_after_listeners = new Map<object, Set<() => void>>
  * @param collectorFn
  */
 export function runAndCallListenersOnce_after<R>(forTarget: object, collectorFn: (callListeners: (listeners?: (() => void)[] | Set<() => void>) => void) => R) {
+    forTarget = getGlobalOrig(forTarget);
     let listenerSet = runAndCallListenersOnce_after_listeners.get(forTarget);
     let isRoot = false; // is it not nested / the outermost call ?
     if(listenerSet === undefined) {

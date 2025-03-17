@@ -198,3 +198,14 @@ export function invalidateObject(obj: object, message: string, cause?: Error) {
         }
     }))
 }
+
+/**
+ * @returns the real real origial object from the real world
+ */
+export function getGlobalOrig<T extends object>(obj: T): T {
+    let handler: FacadeProxyHandler<any> | undefined
+    while((handler = proxyToProxyHandler.get(obj)) !== undefined) {
+        obj = handler.target as T;
+    }
+    return obj;
+}
