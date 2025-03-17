@@ -44,8 +44,8 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
 
     protected _fireAfterUnspecificWrite() {
         runAndCallListenersOnce_after(this, (callListeners) => {
-            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
+            callListeners(writeListenersForObject.get(this)?.afterUnspecificChange);
+            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
         });
     }
 
@@ -71,9 +71,9 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
         }
         runAndCallListenersOnce_after(this, (callListeners) => {
             const result = dualUseTracker_callOrigMethodOnTarget(this, "add", [value]);
-            callListeners(writeListenersForSet.get(this._target)?.afterSpecificValueChanged.get(value));
-            callListeners(writeListenersForSet.get(this._target)?.afterAnyValueChanged);
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
+            callListeners(writeListenersForSet.get(this)?.afterSpecificValueChanged.get(value));
+            callListeners(writeListenersForSet.get(this)?.afterAnyValueChanged);
+            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
         });
         return this;
     }
@@ -83,9 +83,9 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
         return runAndCallListenersOnce_after(this, (callListeners) => {
             const result = dualUseTracker_callOrigMethodOnTarget(this, "delete", [value]);
             if(result) { // deleted?
-                callListeners(writeListenersForSet.get(this._target)?.afterSpecificValueChanged.get(value));
-                callListeners(writeListenersForSet.get(this._target)?.afterAnyValueChanged);
-                callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
+                callListeners(writeListenersForSet.get(this)?.afterSpecificValueChanged.get(value));
+                callListeners(writeListenersForSet.get(this)?.afterAnyValueChanged);
+                callListeners(writeListenersForObject.get(this)?.afterAnyChange);
             }
             return result
         });
@@ -94,9 +94,9 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
     clear() {
         runAndCallListenersOnce_after(this, (callListeners) => {
             const result = dualUseTracker_callOrigMethodOnTarget(this, "clear", []);
-            callListeners(writeListenersForSet.get(this._target)?.afterAnyValueChanged);
-            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
+            callListeners(writeListenersForSet.get(this)?.afterAnyValueChanged);
+            callListeners(writeListenersForObject.get(this)?.afterUnspecificChange);
+            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
         });
     }
 

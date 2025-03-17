@@ -47,8 +47,8 @@ export class WriteTrackedArray<T> extends Array<T> implements DualUseTracker<Arr
 
     protected _fireAfterUnspecificWrite() {
         runAndCallListenersOnce_after(this, (callListeners) => {
-            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
+            callListeners(writeListenersForObject.get(this)?.afterUnspecificChange);
+            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
         });
     }
 
@@ -190,9 +190,9 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
         return runAndCallListenersOnce_after(this, (callListeners) => {
             //@ts-ignore
             const result = super.shift(...args);
-            callListeners(getWriteListenersForObject(this._target)?.afterChangeOwnKeys);
-            callListeners(getWriteListenersForObject(this._target)?.afterUnspecificChange);
-            callListeners(getWriteListenersForObject(this._target)?.afterAnyChange);
+            callListeners(getWriteListenersForObject(this)?.afterChangeOwnKeys);
+            callListeners(getWriteListenersForObject(this)?.afterUnspecificChange);
+            callListeners(getWriteListenersForObject(this)?.afterAnyChange);
             this._fireAfterValuesRead();
             return result;
         });
@@ -214,9 +214,9 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
         return runAndCallListenersOnce_after(this, (callListeners) => {
             //@ts-ignore
             const result = super.pop(...args);
-            callListeners(getWriteListenersForObject(this._target)?.afterChangeOwnKeys);
-            callListeners(getWriteListenersForObject(this._target)?.afterUnspecificChange);
-            callListeners(getWriteListenersForObject(this._target)?.afterAnyChange);
+            callListeners(getWriteListenersForObject(this)?.afterChangeOwnKeys);
+            callListeners(getWriteListenersForObject(this)?.afterUnspecificChange);
+            callListeners(getWriteListenersForObject(this)?.afterAnyChange);
             this._fireAfterValuesRead();
             return result;
         });

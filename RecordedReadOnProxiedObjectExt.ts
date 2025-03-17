@@ -8,14 +8,16 @@ import {installChangeTracker} from "./origChangeTracking";
 export abstract class RecordedReadOnProxiedObjectExt extends RecordedReadOnProxiedObject {
 
     onChange(listener: () => void, trackOriginal = false) {
+        this.getAffectingChangeListenerSets(this.proxyHandler.proxy).forEach(listenerSet => listenerSet?.add(listener));
         if (trackOriginal) {
             installChangeTracker(this.obj);
+            this.getAffectingChangeListenerSets(this.obj).forEach(listenerSet => listenerSet?.add(listener));
         }
-        this.getAffectingChangeListenerSets(this.obj).forEach(listenerSet => listenerSet?.add(listener));
     }
 
     offChange(listener: () => void) {
         this.getAffectingChangeListenerSets(this.obj).forEach(listenerSet => listenerSet?.delete(listener));
+        this.getAffectingChangeListenerSets(this.proxyHandler.proxy).forEach(listenerSet => listenerSet?.delete(listener));
     }
 
     /**

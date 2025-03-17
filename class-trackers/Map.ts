@@ -48,8 +48,8 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
 
     protected _fireAfterUnspecificWrite() {
         runAndCallListenersOnce_after(this, (callListeners) => {
-            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
+            callListeners(writeListenersForObject.get(this)?.afterUnspecificChange);
+            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
         });
     }
 
@@ -80,16 +80,16 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
         runAndCallListenersOnce_after(this, (callListeners) => {
             const result = dualUseTracker_callOrigMethodOnTarget(this, "set", [key, value]);
             if(isNewKey) {
-                callListeners(writeListenersForMap.get(this._target)?.afterSpecificKeyAddedOrRemoved.get(key));
-                callListeners(writeListenersForMap.get(this._target)?.afterAnyKeyAddedOrRemoved);
+                callListeners(writeListenersForMap.get(this)?.afterSpecificKeyAddedOrRemoved.get(key));
+                callListeners(writeListenersForMap.get(this)?.afterAnyKeyAddedOrRemoved);
             }
 
             if(valueChanged) {
-                callListeners(writeListenersForMap.get(this._target)?.afterSpecificValueChanged.get(key));
-                callListeners(writeListenersForMap.get(this._target)?.afterAnyValueChanged);
+                callListeners(writeListenersForMap.get(this)?.afterSpecificValueChanged.get(key));
+                callListeners(writeListenersForMap.get(this)?.afterAnyValueChanged);
             }
 
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
+            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
         });
         return this;
     }
@@ -99,11 +99,11 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
         return runAndCallListenersOnce_after(this, (callListeners) => {
             const result = dualUseTracker_callOrigMethodOnTarget(this, "delete", [key]);
             if(result) { // deleted?
-                callListeners(writeListenersForMap.get(this._target)?.afterSpecificKeyAddedOrRemoved.get(key));
-                callListeners(writeListenersForMap.get(this._target)?.afterAnyKeyAddedOrRemoved);
-                callListeners(writeListenersForMap.get(this._target)?.afterSpecificValueChanged.get(key));
-                callListeners(writeListenersForMap.get(this._target)?.afterAnyValueChanged);
-                callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
+                callListeners(writeListenersForMap.get(this)?.afterSpecificKeyAddedOrRemoved.get(key));
+                callListeners(writeListenersForMap.get(this)?.afterAnyKeyAddedOrRemoved);
+                callListeners(writeListenersForMap.get(this)?.afterSpecificValueChanged.get(key));
+                callListeners(writeListenersForMap.get(this)?.afterAnyValueChanged);
+                callListeners(writeListenersForObject.get(this)?.afterAnyChange);
             }
             return result;
         });
@@ -112,10 +112,10 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
     clear() {
         runAndCallListenersOnce_after(this, (callListeners) => {
             const result = dualUseTracker_callOrigMethodOnTarget(this, "clear", []);
-            callListeners(writeListenersForMap.get(this._target)?.afterAnyKeyAddedOrRemoved);
-            callListeners(writeListenersForMap.get(this._target)?.afterAnyValueChanged);
-            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
+            callListeners(writeListenersForMap.get(this)?.afterAnyKeyAddedOrRemoved);
+            callListeners(writeListenersForMap.get(this)?.afterAnyValueChanged);
+            callListeners(writeListenersForObject.get(this)?.afterUnspecificChange);
+            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
         });
     }
 
