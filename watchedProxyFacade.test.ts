@@ -450,7 +450,7 @@ describe('WatchedProxyFacade tests', () => {
 
         // Install listener:
         let writes: unknown[] = [];
-        watchedProxyFacade.onAfterWriteOnProperty(sampleGraph, "appName", () => writes.push("dummy"));
+        watchedProxyFacade.onAfterWriteOnProperty(proxy, "appName", () => writes.push("dummy"));
 
         proxy.appName = "xyz"; proxy.appName = "123";
         expect(writes.length).toEqual(2)
@@ -464,7 +464,7 @@ describe('WatchedProxyFacade tests', () => {
 
         // Install listener:
         let writes: unknown[] = [];
-        watchedProxyFacade.onAfterWriteOnProperty(sampleGraph, "counter", () => writes.push("dummy"));
+        watchedProxyFacade.onAfterWriteOnProperty(proxy, "counter", () => writes.push("dummy"));
 
         proxy.counter++;
         expect(writes.length).toEqual(1);
