@@ -43,7 +43,7 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
     }
 
     protected _fireAfterUnspecificWrite() {
-        runAndCallListenersOnce_after(this._target, (callListeners) => {
+        runAndCallListenersOnce_after(this, (callListeners) => {
             callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);
             callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
         });
@@ -69,7 +69,7 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
         if(this._target.has(value)) { // No change?
             return this;
         }
-        runAndCallListenersOnce_after(this._target, (callListeners) => {
+        runAndCallListenersOnce_after(this, (callListeners) => {
             const result = dualUseTracker_callOrigMethodOnTarget(this, "add", [value]);
             callListeners(writeListenersForSet.get(this._target)?.afterSpecificValueChanged.get(value));
             callListeners(writeListenersForSet.get(this._target)?.afterAnyValueChanged);
@@ -80,7 +80,7 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
 
     delete(value: T): boolean {
         value = this._watchedProxyHandler?this._watchedProxyHandler.getFacade().getUnproxiedValue(value):value; // Translate to unproxied value
-        return runAndCallListenersOnce_after(this._target, (callListeners) => {
+        return runAndCallListenersOnce_after(this, (callListeners) => {
             const result = dualUseTracker_callOrigMethodOnTarget(this, "delete", [value]);
             if(result) { // deleted?
                 callListeners(writeListenersForSet.get(this._target)?.afterSpecificValueChanged.get(value));
@@ -92,7 +92,7 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
     }
 
     clear() {
-        runAndCallListenersOnce_after(this._target, (callListeners) => {
+        runAndCallListenersOnce_after(this, (callListeners) => {
             const result = dualUseTracker_callOrigMethodOnTarget(this, "clear", []);
             callListeners(writeListenersForSet.get(this._target)?.afterAnyValueChanged);
             callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);

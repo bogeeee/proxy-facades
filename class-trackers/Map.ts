@@ -47,7 +47,7 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
     }
 
     protected _fireAfterUnspecificWrite() {
-        runAndCallListenersOnce_after(this._target, (callListeners) => {
+        runAndCallListenersOnce_after(this, (callListeners) => {
             callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);
             callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
         });
@@ -77,7 +77,7 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
             return this;
         }
 
-        runAndCallListenersOnce_after(this._target, (callListeners) => {
+        runAndCallListenersOnce_after(this, (callListeners) => {
             const result = dualUseTracker_callOrigMethodOnTarget(this, "set", [key, value]);
             if(isNewKey) {
                 callListeners(writeListenersForMap.get(this._target)?.afterSpecificKeyAddedOrRemoved.get(key));
@@ -96,7 +96,7 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
 
     delete(key: K): boolean {
         key = this._watchedProxyHandler?this._watchedProxyHandler.getFacade().getUnproxiedValue(key):key; // Translate to unproxied key
-        return runAndCallListenersOnce_after(this._target, (callListeners) => {
+        return runAndCallListenersOnce_after(this, (callListeners) => {
             const result = dualUseTracker_callOrigMethodOnTarget(this, "delete", [key]);
             if(result) { // deleted?
                 callListeners(writeListenersForMap.get(this._target)?.afterSpecificKeyAddedOrRemoved.get(key));
@@ -110,7 +110,7 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
     }
 
     clear() {
-        runAndCallListenersOnce_after(this._target, (callListeners) => {
+        runAndCallListenersOnce_after(this, (callListeners) => {
             const result = dualUseTracker_callOrigMethodOnTarget(this, "clear", []);
             callListeners(writeListenersForMap.get(this._target)?.afterAnyKeyAddedOrRemoved);
             callListeners(writeListenersForMap.get(this._target)?.afterAnyValueChanged);

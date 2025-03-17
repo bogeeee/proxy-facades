@@ -46,7 +46,7 @@ export class WriteTrackedArray<T> extends Array<T> implements DualUseTracker<Arr
     }
 
     protected _fireAfterUnspecificWrite() {
-        runAndCallListenersOnce_after(this._target, (callListeners) => {
+        runAndCallListenersOnce_after(this, (callListeners) => {
             callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);
             callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
         });
@@ -187,7 +187,7 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
 
     //@ts-ignore
     shift(...args: any[]) {
-        return runAndCallListenersOnce_after(this._target, (callListeners) => {
+        return runAndCallListenersOnce_after(this, (callListeners) => {
             //@ts-ignore
             const result = super.shift(...args);
             callListeners(getWriteListenersForObject(this._target)?.afterChangeOwnKeys);
@@ -211,7 +211,7 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
 
     //@ts-ignore
     pop(...args: any[]): T | undefined {
-        return runAndCallListenersOnce_after(this._target, (callListeners) => {
+        return runAndCallListenersOnce_after(this, (callListeners) => {
             //@ts-ignore
             const result = super.pop(...args);
             callListeners(getWriteListenersForObject(this._target)?.afterChangeOwnKeys);

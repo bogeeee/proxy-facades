@@ -245,6 +245,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
 
     get (fake_target:object, key:string | symbol, receiver:any) {
         const target = this.target;
+        const proxy = this.proxy;
         const thisHandler = this;
         const receiverMustBeNonProxied = this.trackingConfig?.receiverMustBeNonProxied === true;
 
@@ -310,7 +311,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
          * @param args
          */
         function trapForGenericReaderWriterMethod(this:object, ...args: unknown[]) {
-            return runAndCallListenersOnce_after(target, (callListeners) => {
+            return runAndCallListenersOnce_after(proxy, (callListeners) => {
                 const callResult = origMethod!.apply(receiverMustBeNonProxied?target:this, args); // call original method:
                 callListeners(writeListenersForObject.get(target)?.afterUnspecificChange); // Call listeners
                 callListeners(writeListenersForObject.get(target)?.afterAnyChange); // Call listeners
@@ -325,7 +326,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
          * @param args
          */
         function trapHighLevelReaderWriterMethod(this:object, ...args: unknown[]) {
-            return runAndCallListenersOnce_after(target, (callListeners) => {
+            return runAndCallListenersOnce_after(proxy, (callListeners) => {
                 return origMethod!.apply(this, args);  // call original method
             });
         }
@@ -345,7 +346,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
     }
 
     protected rawChange(key: string | symbol, newUnproxiedValue: any) {
-        runAndCallListenersOnce_after(this.target, (callListeners) => {
+        runAndCallListenersOnce_after(this.proxy, (callListeners) => {
             const isNewProperty = getPropertyDescriptor(this.target, key) === undefined;
             super.rawChange(key, newUnproxiedValue);
             if(!objectHasChangeTrackerInstalled(this.target)) { // Listeners were not already called ?
@@ -365,7 +366,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
     }
 
     deleteProperty(target: object, key: string | symbol): boolean {
-        return runAndCallListenersOnce_after(this.target, (callListeners) => {
+        return runAndCallListenersOnce_after(this.proxy, (callListeners) => {
             const doesExists = Object.getOwnPropertyDescriptor(this.target, key) !== undefined;
             if (doesExists) {
                 this.set(target, key, undefined, this.proxy); // Set to undefined first, so property change listeners will get informed
