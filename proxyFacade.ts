@@ -155,6 +155,10 @@ function getProxyHandler(proxy: object) {
     return proxyToProxyHandler.get(proxy);
 }
 
+export function isProxyForAFacade(obj: object) {
+    return proxyToProxyHandler.has(obj);
+}
+
 /**
  * Makes the obj throw an error when trying to access it
  * @param obj

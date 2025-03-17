@@ -5,6 +5,8 @@
 import {runAndCallListenersOnce_after} from "./common";
 import {ObjectProxyHandler, writeListenersForObject} from "./objectChangeTracking";
 import {getTrackingConfigFor} from "./class-trackers/index";
+import {isProxyForAFacade} from "./proxyFacade";
+import {throwError} from "./Util";
 
 
 const objectsWithChangeTrackerInstalled = new WeakSet<object>();
@@ -18,6 +20,7 @@ export function objectHasChangeTrackerInstalled(obj: object) {
  * @param obj
  */
 export function installChangeTracker(obj: object) {
+    !isProxyForAFacade(obj) || throwError("Cannot install change tracker on a proxy. The proxy should already support change tracking.");
     if(objectHasChangeTrackerInstalled(obj)) {
         return;
     }

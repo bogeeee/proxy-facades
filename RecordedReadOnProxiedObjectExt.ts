@@ -1,5 +1,6 @@
 import {AfterWriteListener, RecordedReadOnProxiedObject} from "./common";
 import {installChangeTracker} from "./origChangeTracking";
+import {isProxyForAFacade} from "./proxyFacade";
 
 
 /**
@@ -10,7 +11,9 @@ export abstract class RecordedReadOnProxiedObjectExt extends RecordedReadOnProxi
     onChange(listener: () => void, trackOriginal = false) {
         this.getAffectingChangeListenerSets(this.proxyHandler.proxy).forEach(listenerSet => listenerSet?.add(listener));
         if (trackOriginal) {
-            installChangeTracker(this.obj);
+            if(!isProxyForAFacade(this.obj)) {
+                installChangeTracker(this.obj);
+            }
             this.getAffectingChangeListenerSets(this.obj).forEach(listenerSet => listenerSet?.add(listener));
         }
     }
