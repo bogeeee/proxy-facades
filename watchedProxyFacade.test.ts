@@ -641,9 +641,9 @@ describe('WatchedProxyFacade record read and watch it', () => {
             testWriterConsitency(provideTestSetup as any);
         }
 
-        for(const withNestedFacade of [false/*, true nested facades compatibility not implemented */]) {
-            for (const mode of ["With writes through WatchedProxyFacade proxy", "With writes through installed write tracker", "With writes through 2 nested WatchedProxyFacade facades"]) {
-                test(`${name} ${withNestedFacade?" With nested facade. ":""} ${mode}`, () => {
+        for(const withLayeredFacades of [false, true]) {
+            for (const mode of ["With writes through WatchedProxyFacade proxy", "With writes through installed write tracker", "With writes through 2 layered WatchedProxyFacade facades"]) {
+                test(`${name} ${withLayeredFacades?" With layered facades. ":""} ${mode}`, () => {
                     const testSetup = provideTestSetup();
 
                     //writerFn:
@@ -651,7 +651,7 @@ describe('WatchedProxyFacade record read and watch it', () => {
                         const testSetup = provideTestSetup();
                         let watchedProxyFacade = new WatchedProxyFacade();
                         let origObj = testSetup.origObj;
-                        if(withNestedFacade) {
+                        if(withLayeredFacades) {
                             origObj = new WatchedProxyFacade().getProxyFor(origObj);
                         }
                         const proxy = watchedProxyFacade.getProxyFor(origObj);
@@ -671,7 +671,7 @@ describe('WatchedProxyFacade record read and watch it', () => {
                         } else if (mode === "With writes through installed write tracker") {
                             lastRead.onChange(changeHandler, true);
                             testSetup.writerFn!(origObj);
-                        } else if (mode === "With writes through 2 nested WatchedProxyFacade facades") {
+                        } else if (mode === "With writes through 2 layered WatchedProxyFacade facades") {
                             lastRead.onChange(changeHandler, true);
                             let watchedProxyFacade2 = new WatchedProxyFacade();
                             const proxy2 = watchedProxyFacade2.getProxyFor(origObj);
@@ -686,7 +686,7 @@ describe('WatchedProxyFacade record read and watch it', () => {
                         const testSetup = provideTestSetup();
                         let origObj = testSetup.origObj;
                         let watchedProxyFacade = new WatchedProxyFacade();
-                        const proxy = watchedProxyFacade.getProxyFor(withNestedFacade?new WatchedProxyFacade().getProxyFor(testSetup.origObj):testSetup.origObj);
+                        const proxy = watchedProxyFacade.getProxyFor(withLayeredFacades?new WatchedProxyFacade().getProxyFor(testSetup.origObj):testSetup.origObj);
                         let reads: RecordedPropertyRead[] = [];
                         watchedProxyFacade.onAfterRead(r => reads.push(r as RecordedPropertyRead));
                         reads = [];
@@ -702,7 +702,7 @@ describe('WatchedProxyFacade record read and watch it', () => {
                         } else if (mode === "With writes through installed write tracker") {
                             lastRead.onChange(changeHandler, true);
                             testSetup.falseWritesFn!(origObj);
-                        } else if (mode === "With writes through 2 nested WatchedProxyFacade facades") {
+                        } else if (mode === "With writes through 2 layered WatchedProxyFacade facades") {
                             lastRead.onChange(changeHandler, true);
                             let watchedProxyFacade2 = new WatchedProxyFacade();
                             const proxy2 = watchedProxyFacade2.getProxyFor(origObj);
@@ -718,7 +718,7 @@ describe('WatchedProxyFacade record read and watch it', () => {
                         const testSetup = provideTestSetup();
                         let origObj = testSetup.origObj;
                         let watchedProxyFacade = new WatchedProxyFacade();
-                        const proxy = watchedProxyFacade.getProxyFor(withNestedFacade?new WatchedProxyFacade().getProxyFor(testSetup.origObj):testSetup.origObj);
+                        const proxy = watchedProxyFacade.getProxyFor(withLayeredFacades?new WatchedProxyFacade().getProxyFor(testSetup.origObj):testSetup.origObj);
                         let reads: RecordedPropertyRead[] = [];
                         watchedProxyFacade.onAfterRead(r => reads.push(r as RecordedPropertyRead));
                         testSetup.falseReadFn!(proxy);
@@ -734,7 +734,7 @@ describe('WatchedProxyFacade record read and watch it', () => {
                         } else if (mode === "With writes through installed write tracker") {
                             lastRead.onChange(changeHandler, true);
                             testSetup.writerFn!(origObj);
-                        } else if (mode === "With writes through 2 nested WatchedProxyFacade facades") {
+                        } else if (mode === "With writes through 2 layered WatchedProxyFacade facades") {
                             lastRead.onChange(changeHandler, true);
                             let watchedProxyFacade2 = new WatchedProxyFacade();
                             const proxy2 = watchedProxyFacade2.getProxyFor(origObj);
