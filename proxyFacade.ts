@@ -2,7 +2,7 @@
  *
  */
 import {getPropertyDescriptor, GetterFlags, ObjKey, SetterFlags} from "./common";
-import {deleteProperty} from "./origWriteTracking";
+import {deleteProperty} from "./origChangeTracking";
 
 export abstract class ProxyFacade<HANDLER extends FacadeProxyHandler<any>> {
     // *** Configuration: ***

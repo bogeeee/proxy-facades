@@ -8,8 +8,8 @@ import {
     runAndCallListenersOnce_after
 } from "../common";
 import {arraysAreShallowlyEqual} from "../Util";
-import {getWriteListenersForObject, writeListenersForObject} from "../origObjectWriteTracking";
-import {installWriteTracker} from "../origWriteTracking";
+import {getWriteListenersForObject, writeListenersForObject} from "../origObjectChangeTracking";
+import {installWriteTracker} from "../origChangeTracking";
 import {WatchedProxyHandler} from "../watchedProxyFacade";
 import {RecordedReadOnProxiedObjectExt} from "../RecordedReadOnProxiedObjectExt";
 

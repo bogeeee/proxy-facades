@@ -1,5 +1,5 @@
 import {AfterWriteListener, RecordedReadOnProxiedObject} from "./common";
-import {installWriteTracker} from "./origWriteTracking";
+import {installWriteTracker} from "./origChangeTracking";
 
 
 /**

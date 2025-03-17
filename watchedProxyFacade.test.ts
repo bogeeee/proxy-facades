@@ -6,7 +6,7 @@ import {
 import _ from "underscore"
 import {arraysAreEqualsByPredicateFn, isObject, read, visitReplace} from "./Util";
 import {Clazz, ObjKey, RecordedRead, recordedReadsArraysAreEqual} from "./common";
-import {deleteProperty, installWriteTracker} from "./origWriteTracking";
+import {deleteProperty, installWriteTracker} from "./origChangeTracking";
 import {ProxyFacade} from "./proxyFacade";
 import exp from "constants";
 import {fail} from "assert";
