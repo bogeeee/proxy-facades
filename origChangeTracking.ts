@@ -7,18 +7,18 @@ import {ObjectProxyHandler, writeListenersForObject} from "./origObjectChangeTra
 import {getTrackingConfigFor} from "./class-trackers/index";
 
 
-const objectsWithWriteTrackerInstalled = new WeakSet<object>();
+const objectsWithChangeTrackerInstalled = new WeakSet<object>();
 
-export function objectHasWriteTrackerInstalled(obj: object) {
-    return objectsWithWriteTrackerInstalled.has(obj);
+export function objectHasChangeTrackerInstalled(obj: object) {
+    return objectsWithChangeTrackerInstalled.has(obj);
 }
 
 /**
  *
  * @param obj
  */
-export function installWriteTracker(obj: object) {
-    if(objectHasWriteTrackerInstalled(obj)) {
+export function installChangeTracker(obj: object) {
+    if(objectHasChangeTrackerInstalled(obj)) {
         return;
     }
 
@@ -42,7 +42,7 @@ export function installWriteTracker(obj: object) {
     }
     inner();
 
-    objectsWithWriteTrackerInstalled.add(obj);
+    objectsWithChangeTrackerInstalled.add(obj);
 }
 
 /**
@@ -51,7 +51,7 @@ export function installWriteTracker(obj: object) {
  * @param key
  */
 export function deleteProperty<O extends object>(obj: O, key: keyof O) {
-    if(!objectHasWriteTrackerInstalled(obj)) {
+    if(!objectHasChangeTrackerInstalled(obj)) {
         return delete obj[key];
     }
 

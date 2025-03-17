@@ -262,7 +262,7 @@ export abstract class ClassTrackingConfiguration {
     proxyUnhandledMethodResults=false
 
     /**
-     * Lists read and writeTracker as far as they're present
+     * Lists read and changeTracker as far as they're present
      */
     getTrackerClasses(): Clazz[] {
         const result = [];

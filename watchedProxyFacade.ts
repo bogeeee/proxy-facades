@@ -1,6 +1,6 @@
 import {FacadeProxyHandler, ProxyFacade} from "./proxyFacade";
 import {throwError} from "./Util";
-import {installWriteTracker, objectHasWriteTrackerInstalled} from "./origChangeTracking";
+import {installChangeTracker, objectHasChangeTrackerInstalled} from "./origChangeTracking";
 import {
     AfterChangeOwnKeysListener,
     AfterReadListener,
@@ -348,7 +348,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
         runAndCallListenersOnce_after(this.target, (callListeners) => {
             const isNewProperty = getPropertyDescriptor(this.target, key) === undefined;
             super.rawChange(key, newUnproxiedValue);
-            if(!objectHasWriteTrackerInstalled(this.target)) { // Listeners were not already called ?
+            if(!objectHasChangeTrackerInstalled(this.target)) { // Listeners were not already called ?
                 if(this.isForArray()) {
                     callListeners(writeListenersForObject.get(this.target)?.afterUnspecificWrite);
                 }
@@ -372,7 +372,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
             }
             const result = super.deleteProperty(target, key);
             if (doesExists) {
-                if (!objectHasWriteTrackerInstalled(this.target)) { // Listeners were not already called ?
+                if (!objectHasChangeTrackerInstalled(this.target)) { // Listeners were not already called ?
                     callListeners(writeListenersForObject.get(this.target)?.afterChangeOwnKeys_listeners);
                     callListeners(writeListenersForObject.get(this.target)?.afterAnyWrite_listeners);
                 }

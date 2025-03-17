@@ -9,7 +9,7 @@ import {
 } from "../common";
 import {getWriteListenersForObject, writeListenersForObject} from "../origObjectChangeTracking";
 import {arraysAreShallowlyEqual, arraysWithEntriesAreShallowlyEqual, MapSet} from "../Util";
-import {installWriteTracker} from "../origChangeTracking";
+import {installChangeTracker} from "../origChangeTracking";
 import {WatchedProxyHandler} from "../watchedProxyFacade";
 import {RecordedReadOnProxiedObjectExt} from "../RecordedReadOnProxiedObjectExt";
 

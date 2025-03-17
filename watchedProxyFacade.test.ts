@@ -6,7 +6,7 @@ import {
 import _ from "underscore"
 import {arraysAreEqualsByPredicateFn, isObject, read, visitReplace} from "./Util";
 import {Clazz, ObjKey, RecordedRead, recordedReadsArraysAreEqual} from "./common";
-import {deleteProperty, installWriteTracker} from "./origChangeTracking";
+import {deleteProperty, installChangeTracker} from "./origChangeTracking";
 import {ProxyFacade} from "./proxyFacade";
 import exp from "constants";
 import {fail} from "assert";
@@ -177,7 +177,7 @@ describe('ProxyFacade and installed write tracker tests', () => {
         }
     }, {
         name: "Installed write tracker", proxyOrEnhance<T extends object>(o: T) {
-            installWriteTracker(o);
+            installChangeTracker(o);
             return o;
         }
     }]) {
@@ -523,7 +523,7 @@ describe('WatchedProxyFacade tests', () => {
 
     test("Arrays should work normally when when creating the proxy, **after** the write tracker has been installed ", () => {
         const orig: any[] = ["a", "b",{name: "c"}];
-        installWriteTracker(orig);
+        installChangeTracker(orig);
         orig.push({name: "d"});
         const facade = new WatchedProxyFacade();
         const proxy = facade.getProxyFor(orig);
@@ -542,7 +542,7 @@ describe('WatchedProxyFacade tests', () => {
         const itemD = {name: "d"};
         const itemE = {name: "e"};
         const orig = new Set<any>(["a", itemB])
-        installWriteTracker(orig);
+        installChangeTracker(orig);
         orig.add(itemC);
         const facade = new WatchedProxyFacade();
         const proxy = facade.getProxyFor(orig);
@@ -571,7 +571,7 @@ describe('WatchedProxyFacade tests', () => {
         const valueD = {value: "d"};
         const valueE = {value: "e"};
         const orig = new Map<any,any>([["a","a"], [keyB,valueB]])
-        installWriteTracker(orig);
+        installChangeTracker(orig);
         orig.set(keyC, valueC);
         const facade = new WatchedProxyFacade();
         const proxy = facade.getProxyFor(orig);
@@ -1610,10 +1610,10 @@ function fnToString(fn: (...args: any[]) => unknown) {
     return fn.toString().replace(/\s+/g," ").toString();
 }
 
-function enhanceWithWriteTrackerDeep(obj: object) {
+function enhanceWithChangeTrackerDeep(obj: object) {
     visitReplace(obj, (value, visitChilds, context) => {
         if(isObject(value)) {
-            installWriteTracker(value);
+            installChangeTracker(value);
         }
         return visitChilds(value, context)
     })
@@ -1639,7 +1639,7 @@ function testWriterConsitency<T extends object>(provideTestSetup: () => {origObj
             } else if (mode === "With writes through installed write tracker") {
                 const testSetup = provideTestSetup();
                 const proxy = new WatchedProxyFacade().getProxyFor(testSetup.origObj);
-                enhanceWithWriteTrackerDeep(testSetup.origObj);
+                enhanceWithChangeTrackerDeep(testSetup.origObj);
                 testSetup.writerFn(testSetup.origObj);
                 expect(_.isEqual(proxy, origForCompareTestSetup.origObj)).toBeTruthy();
                 expect(_.isEqual(testSetup.origObj, origForCompareTestSetup.origObj)).toBeTruthy();

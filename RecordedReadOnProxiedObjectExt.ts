@@ -1,5 +1,5 @@
 import {AfterWriteListener, RecordedReadOnProxiedObject} from "./common";
-import {installWriteTracker} from "./origChangeTracking";
+import {installChangeTracker} from "./origChangeTracking";
 
 
 /**
@@ -9,7 +9,7 @@ export abstract class RecordedReadOnProxiedObjectExt extends RecordedReadOnProxi
 
     onChange(listener: () => void, trackOriginal = false) {
         if (trackOriginal) {
-            installWriteTracker(this.obj);
+            installChangeTracker(this.obj);
         }
         this.getAffectingChangeListenerSets(this.obj).forEach(listenerSet => listenerSet?.add(listener));
     }
