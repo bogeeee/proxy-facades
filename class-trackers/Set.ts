@@ -44,8 +44,8 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
 
     protected _fireAfterUnspecificWrite() {
         runAndCallListenersOnce_after(this._target, (callListeners) => {
-            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificWrite);
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyWrite_listeners);
+            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);
+            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
         });
     }
 
@@ -73,7 +73,7 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
             const result = dualUseTracker_callOrigMethodOnTarget(this, "add", [value]);
             callListeners(writeListenersForSet.get(this._target)?.afterSpecificValueChanged.get(value));
             callListeners(writeListenersForSet.get(this._target)?.afterAnyValueChanged);
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyWrite_listeners);
+            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
         });
         return this;
     }
@@ -85,7 +85,7 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
             if(result) { // deleted?
                 callListeners(writeListenersForSet.get(this._target)?.afterSpecificValueChanged.get(value));
                 callListeners(writeListenersForSet.get(this._target)?.afterAnyValueChanged);
-                callListeners(writeListenersForObject.get(this._target)?.afterAnyWrite_listeners);
+                callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
             }
             return result
         });
@@ -95,8 +95,8 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
         runAndCallListenersOnce_after(this._target, (callListeners) => {
             const result = dualUseTracker_callOrigMethodOnTarget(this, "clear", []);
             callListeners(writeListenersForSet.get(this._target)?.afterAnyValueChanged);
-            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificWrite);
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyWrite_listeners);
+            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);
+            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
         });
     }
 
@@ -124,7 +124,7 @@ export class RecordedSet_has extends RecordedReadOnProxiedObjectExt {
     getAffectingChangeListenerSets(target: this["obj"]) {
         return [
             getWriteListenersForSet(target).afterSpecificValueChanged.get4use(this.value),
-            getWriteListenersForObject(target)?.afterUnspecificWrite
+            getWriteListenersForObject(target)?.afterUnspecificChange
         ];
     }
 
@@ -151,7 +151,7 @@ export class RecordedSetValuesRead extends RecordedReadOnProxiedObjectExt {
     getAffectingChangeListenerSets(target: this["obj"]) {
         return [
             getWriteListenersForSet(target).afterAnyValueChanged,
-            getWriteListenersForObject(target).afterUnspecificWrite
+            getWriteListenersForObject(target).afterUnspecificChange
         ]
     }
 

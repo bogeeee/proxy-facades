@@ -69,10 +69,10 @@ export class RecordedPropertyRead extends RecordedReadOnProxiedObjectExt {
 
     getAffectingChangeListenerSets(target: this["obj"]) {
         const result = [
-            getWriteListenersForObject(target).afterChangeSpecificProperty_listeners.get4use(this.key)
+            getWriteListenersForObject(target).afterChangeSpecificProperty.get4use(this.key)
         ]
         if(Array.isArray(this.obj)) {
-            result.push(getWriteListenersForObject(target).afterUnspecificWrite);
+            result.push(getWriteListenersForObject(target).afterUnspecificChange);
         }
         return result;
     }
@@ -100,10 +100,10 @@ export class RecordedOwnKeysRead extends RecordedReadOnProxiedObjectExt{
 
     getAffectingChangeListenerSets(target: this["obj"]) {
         const result = [
-            getWriteListenersForObject(target).afterChangeOwnKeys_listeners
+            getWriteListenersForObject(target).afterChangeOwnKeys
         ]
         if(Array.isArray(this.obj)) {
-            result.push(getWriteListenersForObject(target).afterUnspecificWrite);
+            result.push(getWriteListenersForObject(target).afterUnspecificChange);
         }
         return result;
     }
@@ -127,7 +127,7 @@ export class RecordedUnspecificRead extends RecordedReadOnProxiedObjectExt{
 
     getAffectingChangeListenerSets(target: this["obj"]) {
         return [
-            getWriteListenersForObject(target).afterAnyWrite_listeners
+            getWriteListenersForObject(target).afterAnyChange
         ]
     }
 
@@ -196,7 +196,7 @@ export class WatchedProxyFacade extends ProxyFacade<WatchedProxyHandler> {
             throw new Error("TODO");
         }
         else {
-            getWriteListenersForObject(obj).afterChangeSpecificProperty_listeners.add(key as ObjKey, listener);
+            getWriteListenersForObject(obj).afterChangeSpecificProperty.add(key as ObjKey, listener);
         }
 
     }
@@ -213,7 +213,7 @@ export class WatchedProxyFacade extends ProxyFacade<WatchedProxyHandler> {
             throw new Error("TODO");
         }
         else {
-            writeListenersForObject.get(obj)?.afterChangeSpecificProperty_listeners.add(key as ObjKey, listener);
+            writeListenersForObject.get(obj)?.afterChangeSpecificProperty.add(key as ObjKey, listener);
         }
     }
 
@@ -306,14 +306,14 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
             return thisHandler.trackingConfig?.proxyUnhandledMethodResults?thisHandler.facade.getProxyFor(callResult):callResult;
         }
         /**
-         * Fires a RecordedUnspecificRead and calls the afterUnspecificWrite listeners
+         * Fires a RecordedUnspecificRead and calls the afterUnspecificChange listeners
          * @param args
          */
         function trapForGenericReaderWriterMethod(this:object, ...args: unknown[]) {
             return runAndCallListenersOnce_after(target, (callListeners) => {
                 const callResult = origMethod!.apply(receiverMustBeNonProxied?target:this, args); // call original method:
-                callListeners(writeListenersForObject.get(target)?.afterUnspecificWrite); // Call listeners
-                callListeners(writeListenersForObject.get(target)?.afterAnyWrite_listeners); // Call listeners
+                callListeners(writeListenersForObject.get(target)?.afterUnspecificChange); // Call listeners
+                callListeners(writeListenersForObject.get(target)?.afterAnyChange); // Call listeners
                 if(thisHandler.trackingConfig?.trackTreads !== false) { // not explicitly disabled ?
                     thisHandler.fireAfterRead(new RecordedUnspecificRead());
                 }
@@ -350,15 +350,15 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
             super.rawChange(key, newUnproxiedValue);
             if(!objectHasChangeTrackerInstalled(this.target)) { // Listeners were not already called ?
                 if(this.isForArray()) {
-                    callListeners(writeListenersForObject.get(this.target)?.afterUnspecificWrite);
+                    callListeners(writeListenersForObject.get(this.target)?.afterUnspecificChange);
                 }
                 const writeListeners = writeListenersForObject.get(this.target);
-                callListeners(writeListeners?.afterChangeSpecificProperty_listeners.get(key));
-                callListeners(writeListeners?.afterChangeAnyProperty_listeners);
+                callListeners(writeListeners?.afterChangeSpecificProperty.get(key));
+                callListeners(writeListeners?.afterChangeAnyProperty);
                 if (isNewProperty) {
-                    callListeners(writeListeners?.afterChangeOwnKeys_listeners);
+                    callListeners(writeListeners?.afterChangeOwnKeys);
                 }
-                callListeners(writeListeners?.afterAnyWrite_listeners);
+                callListeners(writeListeners?.afterAnyChange);
             }
         });
 
@@ -373,8 +373,8 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
             const result = super.deleteProperty(target, key);
             if (doesExists) {
                 if (!objectHasChangeTrackerInstalled(this.target)) { // Listeners were not already called ?
-                    callListeners(writeListenersForObject.get(this.target)?.afterChangeOwnKeys_listeners);
-                    callListeners(writeListenersForObject.get(this.target)?.afterAnyWrite_listeners);
+                    callListeners(writeListenersForObject.get(this.target)?.afterChangeOwnKeys);
+                    callListeners(writeListenersForObject.get(this.target)?.afterAnyChange);
                 }
             }
             return result;

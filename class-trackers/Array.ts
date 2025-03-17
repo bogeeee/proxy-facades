@@ -47,8 +47,8 @@ export class WriteTrackedArray<T> extends Array<T> implements DualUseTracker<Arr
 
     protected _fireAfterUnspecificWrite() {
         runAndCallListenersOnce_after(this._target, (callListeners) => {
-            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificWrite);
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyWrite_listeners);
+            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);
+            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
         });
     }
 
@@ -116,9 +116,9 @@ export class RecordedArrayValuesRead extends RecordedReadOnProxiedObjectExt {
 
     getAffectingChangeListenerSets(target: this["obj"]) {
         return [
-            getWriteListenersForObject(target).afterChangeOwnKeys_listeners,
-            getWriteListenersForObject(target).afterChangeAnyProperty_listeners,
-            getWriteListenersForObject(target).afterUnspecificWrite,
+            getWriteListenersForObject(target).afterChangeOwnKeys,
+            getWriteListenersForObject(target).afterChangeAnyProperty,
+            getWriteListenersForObject(target).afterUnspecificChange,
         ]
     }
 
@@ -190,9 +190,9 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
         return runAndCallListenersOnce_after(this._target, (callListeners) => {
             //@ts-ignore
             const result = super.shift(...args);
-            callListeners(getWriteListenersForObject(this._target)?.afterChangeOwnKeys_listeners);
-            callListeners(getWriteListenersForObject(this._target)?.afterUnspecificWrite);
-            callListeners(getWriteListenersForObject(this._target)?.afterAnyWrite_listeners);
+            callListeners(getWriteListenersForObject(this._target)?.afterChangeOwnKeys);
+            callListeners(getWriteListenersForObject(this._target)?.afterUnspecificChange);
+            callListeners(getWriteListenersForObject(this._target)?.afterAnyChange);
             this._fireAfterValuesRead();
             return result;
         });
@@ -214,9 +214,9 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
         return runAndCallListenersOnce_after(this._target, (callListeners) => {
             //@ts-ignore
             const result = super.pop(...args);
-            callListeners(getWriteListenersForObject(this._target)?.afterChangeOwnKeys_listeners);
-            callListeners(getWriteListenersForObject(this._target)?.afterUnspecificWrite);
-            callListeners(getWriteListenersForObject(this._target)?.afterAnyWrite_listeners);
+            callListeners(getWriteListenersForObject(this._target)?.afterChangeOwnKeys);
+            callListeners(getWriteListenersForObject(this._target)?.afterUnspecificChange);
+            callListeners(getWriteListenersForObject(this._target)?.afterAnyChange);
             this._fireAfterValuesRead();
             return result;
         });

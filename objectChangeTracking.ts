@@ -21,24 +21,23 @@ class ObjectWriteListeners {
     /**
      * For writes on **setters** (also if these are the same/unchanged values)
      */
-    afterSetterInvoke_listeners = new MapSet<ObjKey, AfterWriteListener>();
-    afterChangeSpecificProperty_listeners = new MapSet<ObjKey, AfterWriteListener>();
-    afterChangeAnyProperty_listeners = new Set<AfterWriteListener>();
+    afterSetterInvoke = new MapSet<ObjKey, AfterWriteListener>();
+    afterChangeSpecificProperty = new MapSet<ObjKey, AfterWriteListener>();
+    afterChangeAnyProperty = new Set<AfterWriteListener>();
 
     /**
-     * Means, the result of Object.keys will be different after the change. All iterations over the object/arrays's keys or values are informed that there was a change. Individual {@link afterChangeSpecificProperty_listeners} are not affected!
+     * Means, the result of Object.keys will be different after the change. All iterations over the object/arrays's keys or values are informed that there was a change. Individual {@link afterChangeSpecificProperty} are not affected!
      */
-    afterChangeOwnKeys_listeners = new Set<AfterChangeOwnKeysListener>();
+    afterChangeOwnKeys = new Set<AfterChangeOwnKeysListener>();
     /**
      * These will always be called, no matter how specific a change is
-     * TODO: rename to afterAnyChange?
      */
-    afterAnyWrite_listeners = new Set<()=>void>();
+    afterAnyChange = new Set<()=>void>();
 
     /**
-     * TODO: rename to afterUnspecificChange
+     *
      */
-    afterUnspecificWrite = new Set<AfterWriteListener>();
+    afterUnspecificChange = new Set<AfterWriteListener>();
 }
 
 export const writeListenersForObject = new WeakMap<object, ObjectWriteListeners>();
@@ -98,8 +97,8 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
 
                 if(origSetter !== undefined) {
                     origSetter.apply(target, [newValue]);  // call the setter
-                    callListeners(writeListenersForTarget?.afterSetterInvoke_listeners.get(key));
-                    callListeners(writeListenersForTarget?.afterAnyWrite_listeners);
+                    callListeners(writeListenersForTarget?.afterSetterInvoke.get(key));
+                    callListeners(writeListenersForTarget?.afterAnyChange);
                     return;
                 }
 
@@ -115,11 +114,11 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
 
                     // Call listeners:
                     if(Array.isArray(target)) {
-                        callListeners(writeListenersForObject.get(target)?.afterUnspecificWrite);
+                        callListeners(writeListenersForObject.get(target)?.afterUnspecificChange);
                     }
-                    callListeners(writeListenersForTarget?.afterChangeSpecificProperty_listeners.get(key))
-                    callListeners(writeListenersForTarget?.afterChangeAnyProperty_listeners)
-                    callListeners(writeListenersForTarget?.afterAnyWrite_listeners)
+                    callListeners(writeListenersForTarget?.afterChangeSpecificProperty.get(key))
+                    callListeners(writeListenersForTarget?.afterChangeAnyProperty)
+                    callListeners(writeListenersForTarget?.afterAnyChange)
                 }
             });
         }
@@ -143,8 +142,8 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
 
     fire_array_afterUnspecificWrite() {
         return runAndCallListenersOnce_after(this.target, (callListeners) => {
-            callListeners(writeListenersForObject.get(this.target as Array<unknown>)?.afterUnspecificWrite);
-            callListeners(writeListenersForObject.get(this.target as Array<unknown>)?.afterAnyWrite_listeners);
+            callListeners(writeListenersForObject.get(this.target as Array<unknown>)?.afterUnspecificChange);
+            callListeners(writeListenersForObject.get(this.target as Array<unknown>)?.afterAnyChange);
         });
     }
 
@@ -197,7 +196,7 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
 
         var origMethod: ((this:unknown, ...args:unknown[]) => unknown) | undefined = undefined;
        /**
-         * Calls the afterUnspecificWrite listeners
+         * Calls the afterUnspecificChange listeners
          * @param args
          */
         function trapForGenericWriterMethod(this:object, ...args: unknown[]) {
@@ -206,8 +205,8 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
             }
             return runAndCallListenersOnce_after(target, (callListeners) => {
                 const callResult = origMethod!.apply(this, args);  // call original method
-                callListeners(writeListenersForObject.get(target as Array<unknown>)?.afterUnspecificWrite); // Call listeners
-                callListeners(writeListenersForObject.get(target as Array<unknown>)?.afterAnyWrite_listeners); // Call listeners
+                callListeners(writeListenersForObject.get(target as Array<unknown>)?.afterUnspecificChange); // Call listeners
+                callListeners(writeListenersForObject.get(target as Array<unknown>)?.afterAnyChange); // Call listeners
                 return callResult;
             });
         }
@@ -241,8 +240,8 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
             this.target[key] = value; // Set value again. this should call the setter trap
 
             // There was no setter trap yet. This means that the key is new. Inform those listeners:
-            callListeners(writeListenersForObject.get(this.target)?.afterChangeOwnKeys_listeners);
-            callListeners(writeListenersForObject.get(this.target)?.afterAnyWrite_listeners);
+            callListeners(writeListenersForObject.get(this.target)?.afterChangeOwnKeys);
+            callListeners(writeListenersForObject.get(this.target)?.afterAnyChange);
         });
 
         return true;

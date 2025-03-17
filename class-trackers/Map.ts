@@ -48,8 +48,8 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
 
     protected _fireAfterUnspecificWrite() {
         runAndCallListenersOnce_after(this._target, (callListeners) => {
-            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificWrite);
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyWrite_listeners);
+            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);
+            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
         });
     }
 
@@ -89,7 +89,7 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
                 callListeners(writeListenersForMap.get(this._target)?.afterAnyValueChanged);
             }
 
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyWrite_listeners);
+            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
         });
         return this;
     }
@@ -103,7 +103,7 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
                 callListeners(writeListenersForMap.get(this._target)?.afterAnyKeyAddedOrRemoved);
                 callListeners(writeListenersForMap.get(this._target)?.afterSpecificValueChanged.get(key));
                 callListeners(writeListenersForMap.get(this._target)?.afterAnyValueChanged);
-                callListeners(writeListenersForObject.get(this._target)?.afterAnyWrite_listeners);
+                callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
             }
             return result;
         });
@@ -114,8 +114,8 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
             const result = dualUseTracker_callOrigMethodOnTarget(this, "clear", []);
             callListeners(writeListenersForMap.get(this._target)?.afterAnyKeyAddedOrRemoved);
             callListeners(writeListenersForMap.get(this._target)?.afterAnyValueChanged);
-            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificWrite);
-            callListeners(writeListenersForObject.get(this._target)?.afterAnyWrite_listeners);
+            callListeners(writeListenersForObject.get(this._target)?.afterUnspecificChange);
+            callListeners(writeListenersForObject.get(this._target)?.afterAnyChange);
         });
     }
 
@@ -147,7 +147,7 @@ export class RecordedMap_get extends RecordedReadOnProxiedObjectExt {
         return [
             getWriteListenersForMap(target).afterSpecificKeyAddedOrRemoved.get4use(this.key),
             getWriteListenersForMap(target).afterSpecificValueChanged.get4use(this.key),
-            getWriteListenersForObject(target).afterUnspecificWrite
+            getWriteListenersForObject(target).afterUnspecificChange
         ]
     }
 
@@ -183,7 +183,7 @@ export class RecordedMap_has extends RecordedReadOnProxiedObjectExt {
     getAffectingChangeListenerSets(target: this["obj"]) {
         return [
             getWriteListenersForMap(target).afterSpecificKeyAddedOrRemoved.get4use(this.key),
-            getWriteListenersForObject(target).afterUnspecificWrite,
+            getWriteListenersForObject(target).afterUnspecificChange,
         ]
     }
 
@@ -209,7 +209,7 @@ export class RecordedMapKeysRead extends RecordedReadOnProxiedObjectExt {
     getAffectingChangeListenerSets(target: this["obj"]) {
         return [
             getWriteListenersForMap(target).afterAnyKeyAddedOrRemoved,
-            getWriteListenersForObject(target).afterUnspecificWrite
+            getWriteListenersForObject(target).afterUnspecificChange
         ]
     }
 
@@ -239,7 +239,7 @@ export class RecordedMapValuesRead extends RecordedReadOnProxiedObjectExt {
     getAffectingChangeListenerSets(target: this["obj"]) {
         return [
             getWriteListenersForMap(target).afterAnyValueChanged,
-            getWriteListenersForObject(target).afterUnspecificWrite
+            getWriteListenersForObject(target).afterUnspecificChange
         ]
     }
 
@@ -271,7 +271,7 @@ export class RecordedMapEntriesRead extends RecordedReadOnProxiedObjectExt {
         return [
             getWriteListenersForMap(target).afterAnyKeyAddedOrRemoved,
             getWriteListenersForMap(target).afterAnyValueChanged,
-            getWriteListenersForObject(target).afterUnspecificWrite
+            getWriteListenersForObject(target).afterUnspecificChange
         ]
     }
 
