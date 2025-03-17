@@ -17,8 +17,8 @@
   "main": "index.js",
   "exports": {
     ".": {
-      "browser": "./dist/mjs/index.js",
-      "default": "./index.js"
+      "import": "./index_esm.mjs",
+      "require": "./index.js"
     },
     "./develop": {
       "browser": "./index.ts"
