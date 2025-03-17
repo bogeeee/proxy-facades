@@ -16,6 +16,7 @@ import {
 import {getWriteListenersForObject, writeListenersForObject} from "./globalObjectWriteTracking";
 import _ from "underscore"
 import {getTrackingConfigFor} from "./class-trackers/index";
+import {RecordedReadOnProxiedObjectExt} from "./RecordedReadOnProxiedObjectExt";
 
 
 /**
@@ -50,7 +51,7 @@ export class RecordedValueRead extends RecordedRead{
     }
 }
 
-export class RecordedPropertyRead extends RecordedReadOnProxiedObject{
+export class RecordedPropertyRead extends RecordedReadOnProxiedObjectExt {
     key!: ObjKey;
     value!: unknown;
 
@@ -66,23 +67,14 @@ export class RecordedPropertyRead extends RecordedReadOnProxiedObject{
         return this.obj[this.key] !== this.value;
     }
 
-    onChange(listener: () => void, trackOriginal=false) {
-        if(trackOriginal) {
-            installWriteTracker(this.obj); // Performance TODO: Install a setter trap ONLY for the property of interest. See ObjectProxyHandler#installSetterTrap
-        }
-        getWriteListenersForObject(this.obj).afterChangeSpecificProperty_listeners.add(this.key, listener);
+    getAffectingChangeListenerSets(target: this["obj"]) {
+        const result = [
+            getWriteListenersForObject(target).afterChangeSpecificProperty_listeners.get4use(this.key)
+        ]
         if(Array.isArray(this.obj)) {
-            getWriteListenersForObject(this.obj).afterUnspecificWrite.add(listener);
+            result.push(getWriteListenersForObject(target).afterUnspecificWrite);
         }
-        debug_numberOfPropertyChangeListeners++;
-    }
-
-    offChange(listener: () => void) {
-        writeListenersForObject.get(this.obj)?.afterChangeSpecificProperty_listeners.delete(this.key, listener);
-        if(Array.isArray(this.obj)) {
-            writeListenersForObject.get(this.obj)?.afterUnspecificWrite.delete(listener);
-        }
-        debug_numberOfPropertyChangeListeners--;
+        return result;
     }
 
     equals(other: RecordedRead) {
@@ -94,7 +86,7 @@ export class RecordedPropertyRead extends RecordedReadOnProxiedObject{
     }
 }
 
-export class RecordedOwnKeysRead extends RecordedReadOnProxiedObject{
+export class RecordedOwnKeysRead extends RecordedReadOnProxiedObjectExt{
     value!: ArrayLike<string | symbol>;
 
     constructor(value: RecordedOwnKeysRead["value"]) {
@@ -106,21 +98,14 @@ export class RecordedOwnKeysRead extends RecordedReadOnProxiedObject{
         return !_.isEqual(Reflect.ownKeys(this.obj), this.value);
     }
 
-    onChange(listener: AfterChangeOwnKeysListener, trackOriginal=false) {
-        if(trackOriginal) {
-            installWriteTracker(this.obj);
-        }
-        getWriteListenersForObject(this.obj).afterChangeOwnKeys_listeners.add(listener);
+    getAffectingChangeListenerSets(target: this["obj"]) {
+        const result = [
+            getWriteListenersForObject(target).afterChangeOwnKeys_listeners
+        ]
         if(Array.isArray(this.obj)) {
-            getWriteListenersForObject(this.obj).afterUnspecificWrite.add(listener);
+            result.push(getWriteListenersForObject(target).afterUnspecificWrite);
         }
-    }
-
-    offChange(listener: AfterChangeOwnKeysListener) {
-        writeListenersForObject.get(this.obj)?.afterChangeOwnKeys_listeners.delete(listener);
-        if(Array.isArray(this.obj)) {
-            writeListenersForObject.get(this.obj)?.afterUnspecificWrite.delete(listener);
-        }
+        return result;
     }
 
     equals(other: RecordedRead) {
@@ -135,20 +120,15 @@ export class RecordedOwnKeysRead extends RecordedReadOnProxiedObject{
 /**
  * Fired when a method was called that is not implemented in the supervisor. May be from a future js version
  */
-export class RecordedUnspecificRead extends RecordedReadOnProxiedObject{
+export class RecordedUnspecificRead extends RecordedReadOnProxiedObjectExt{
     get isChanged() {
         return true;
     }
 
-    onChange(listener: () => void, trackOriginal=false) {
-        if(trackOriginal) {
-            installWriteTracker(this.obj);
-        }
-        getWriteListenersForObject(this.obj).afterAnyWrite_listeners.add(listener);
-    }
-
-    offChange(listener: AfterChangeOwnKeysListener) {
-        writeListenersForObject.get(this.obj)?.afterAnyWrite_listeners.delete(listener);
+    getAffectingChangeListenerSets(target: this["obj"]) {
+        return [
+            getWriteListenersForObject(target).afterAnyWrite_listeners
+        ]
     }
 
     equals(other: RecordedRead) {
@@ -421,12 +401,3 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
         return this.target instanceof Map;
     }
 }
-
-
-
-
-
-/**
- * Only counts on vs off calls for a quick alignment check
- */
-export let debug_numberOfPropertyChangeListeners = 0;

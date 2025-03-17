@@ -11,6 +11,7 @@ import {getWriteListenersForObject, writeListenersForObject} from "../globalObje
 import {arraysAreShallowlyEqual, arraysWithEntriesAreShallowlyEqual, MapSet} from "../Util";
 import {installWriteTracker} from "../globalWriteTracking";
 import {WatchedProxyHandler} from "../watchedProxyFacade";
+import {RecordedReadOnProxiedObjectExt} from "../RecordedReadOnProxiedObjectExt";
 
 
 /**
@@ -120,7 +121,7 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
 
 }
 
-export class RecordedMap_get extends RecordedReadOnProxiedObject {
+export class RecordedMap_get extends RecordedReadOnProxiedObjectExt {
     key!: unknown;
 
     keyExists: boolean;
@@ -142,19 +143,12 @@ export class RecordedMap_get extends RecordedReadOnProxiedObject {
         return !(this.keyExists === this.obj.has(this.key) && this.value === this.obj.get(this.key));
     }
 
-    onChange(listener: () => void, trackOriginal = false) {
-        if (trackOriginal) {
-            installWriteTracker(this.obj);
-        }
-        getWriteListenersForMap(this.obj).afterSpecificKeyAddedOrRemoved.add(this.key, listener);
-        getWriteListenersForMap(this.obj).afterSpecificValueChanged.add(this.key, listener);
-        getWriteListenersForObject(this.obj).afterUnspecificWrite.add(listener);
-    }
-
-    offChange(listener: () => void) {
-        writeListenersForObject.get(this.obj)?.afterUnspecificWrite.delete(listener);
-        writeListenersForMap.get(this.obj)?.afterSpecificValueChanged.delete(this.key, listener);
-        writeListenersForMap.get(this.obj)?.afterSpecificKeyAddedOrRemoved.delete(this.key, listener);
+    getAffectingChangeListenerSets(target: this["obj"]) {
+        return [
+            getWriteListenersForMap(target).afterSpecificKeyAddedOrRemoved.get4use(this.key),
+            getWriteListenersForMap(target).afterSpecificValueChanged.get4use(this.key),
+            getWriteListenersForObject(target).afterUnspecificWrite
+        ]
     }
 
     equals(other: RecordedRead) {
@@ -166,7 +160,7 @@ export class RecordedMap_get extends RecordedReadOnProxiedObject {
     }
 }
 
-export class RecordedMap_has extends RecordedReadOnProxiedObject {
+export class RecordedMap_has extends RecordedReadOnProxiedObjectExt {
     key!: unknown;
 
     /**
@@ -186,17 +180,11 @@ export class RecordedMap_has extends RecordedReadOnProxiedObject {
         return this.keyExists !== this.obj.has(this.key);
     }
 
-    onChange(listener: () => void, trackOriginal = false) {
-        if (trackOriginal) {
-            installWriteTracker(this.obj);
-        }
-        getWriteListenersForMap(this.obj).afterSpecificKeyAddedOrRemoved.add(this.key, listener);
-        getWriteListenersForObject(this.obj).afterUnspecificWrite.add(listener);
-    }
-
-    offChange(listener: () => void) {
-        writeListenersForObject.get(this.obj)?.afterUnspecificWrite.delete(listener);
-        writeListenersForMap.get(this.obj)?.afterSpecificKeyAddedOrRemoved.delete(this.key, listener);
+    getAffectingChangeListenerSets(target: this["obj"]) {
+        return [
+            getWriteListenersForMap(target).afterSpecificKeyAddedOrRemoved.get4use(this.key),
+            getWriteListenersForObject(target).afterUnspecificWrite,
+        ]
     }
 
     equals(other: RecordedRead) {
@@ -208,12 +196,9 @@ export class RecordedMap_has extends RecordedReadOnProxiedObject {
     }
 }
 
-export class RecordedMapKeysRead extends RecordedReadOnProxiedObject {
+export class RecordedMapKeysRead extends RecordedReadOnProxiedObjectExt {
     keys: Array<unknown>;
-
-    protected get origObj() {
-        return this.obj as Map<unknown, unknown>;
-    }
+    obj!: Map<unknown, unknown>;
 
 
     constructor(keys: Array<unknown>) {
@@ -221,17 +206,11 @@ export class RecordedMapKeysRead extends RecordedReadOnProxiedObject {
         this.keys = keys;
     }
 
-    onChange(listener: () => void, trackOriginal = false) {
-        if (trackOriginal) {
-            installWriteTracker(this.origObj);
-        }
-        getWriteListenersForMap(this.origObj).afterAnyKeyAddedOrRemoved.add(listener);
-        getWriteListenersForObject(this.origObj).afterUnspecificWrite.add(listener);
-    }
-
-    offChange(listener: () => void) {
-        getWriteListenersForObject(this.origObj).afterUnspecificWrite.delete(listener);
-        getWriteListenersForMap(this.origObj).afterAnyKeyAddedOrRemoved.delete(listener);
+    getAffectingChangeListenerSets(target: this["obj"]) {
+        return [
+            getWriteListenersForMap(target).afterAnyKeyAddedOrRemoved,
+            getWriteListenersForObject(target).afterUnspecificWrite
+        ]
     }
 
     equals(other: RecordedRead): boolean {
@@ -243,34 +222,25 @@ export class RecordedMapKeysRead extends RecordedReadOnProxiedObject {
     }
 
     get isChanged(): boolean {
-        return !arraysAreShallowlyEqual(this.keys, [...(this.origObj as Map<unknown, unknown>).keys()]);
+        return !arraysAreShallowlyEqual(this.keys, [...(this.obj).keys()]);
     }
 }
 
-export class RecordedMapValuesRead extends RecordedReadOnProxiedObject {
+export class RecordedMapValuesRead extends RecordedReadOnProxiedObjectExt {
     values: Array<unknown>;
 
-    protected get origObj() {
-        return this.obj as Map<unknown, unknown>;
-    }
-
+    obj!:Map<unknown, unknown>;
 
     constructor(values: Array<unknown>) {
         super();
         this.values = values;
     }
 
-    onChange(listener: () => void, trackOriginal = false) {
-        if (trackOriginal) {
-            installWriteTracker(this.origObj);
-        }
-        getWriteListenersForMap(this.origObj).afterAnyValueChanged.add(listener);
-        getWriteListenersForObject(this.origObj).afterUnspecificWrite.add(listener);
-    }
-
-    offChange(listener: () => void) {
-        getWriteListenersForObject(this.origObj).afterUnspecificWrite.delete(listener);
-        getWriteListenersForMap(this.origObj).afterAnyValueChanged.delete(listener);
+    getAffectingChangeListenerSets(target: this["obj"]) {
+        return [
+            getWriteListenersForMap(target).afterAnyValueChanged,
+            getWriteListenersForObject(target).afterUnspecificWrite
+        ]
     }
 
     equals(other: RecordedRead): boolean {
@@ -282,16 +252,14 @@ export class RecordedMapValuesRead extends RecordedReadOnProxiedObject {
     }
 
     get isChanged(): boolean {
-        return !arraysAreShallowlyEqual(this.values, [...(this.origObj as Map<unknown, unknown>).values()]);
+        return !arraysAreShallowlyEqual(this.values, [...(this.obj).values()]);
     }
 }
 
-export class RecordedMapEntriesRead extends RecordedReadOnProxiedObject {
+export class RecordedMapEntriesRead extends RecordedReadOnProxiedObjectExt {
     values: Array<[unknown, unknown]>;
 
-    protected get origObj() {
-        return this.obj as Map<unknown, unknown>;
-    }
+    obj!: Map<unknown, unknown>;
 
 
     constructor(values: Array<[unknown, unknown]>) {
@@ -299,19 +267,12 @@ export class RecordedMapEntriesRead extends RecordedReadOnProxiedObject {
         this.values = values;
     }
 
-    onChange(listener: () => void, trackOriginal = false) {
-        if (trackOriginal) {
-            installWriteTracker(this.origObj);
-        }
-        getWriteListenersForMap(this.origObj).afterAnyKeyAddedOrRemoved.add(listener);
-        getWriteListenersForMap(this.origObj).afterAnyValueChanged.add(listener);
-        getWriteListenersForObject(this.origObj).afterUnspecificWrite.add(listener);
-    }
-
-    offChange(listener: () => void) {
-        getWriteListenersForObject(this.origObj).afterUnspecificWrite.delete(listener);
-        getWriteListenersForMap(this.origObj).afterAnyValueChanged.delete(listener);
-        getWriteListenersForMap(this.origObj).afterAnyKeyAddedOrRemoved.delete(listener);
+    getAffectingChangeListenerSets(target: this["obj"]) {
+        return [
+            getWriteListenersForMap(target).afterAnyKeyAddedOrRemoved,
+            getWriteListenersForMap(target).afterAnyValueChanged,
+            getWriteListenersForObject(target).afterUnspecificWrite
+        ]
     }
 
     equals(other: RecordedRead): boolean {
@@ -323,7 +284,7 @@ export class RecordedMapEntriesRead extends RecordedReadOnProxiedObject {
     }
 
     get isChanged(): boolean {
-        return !arraysWithEntriesAreShallowlyEqual(this.values, [...(this.origObj as Map<unknown, unknown>).entries()]);
+        return !arraysWithEntriesAreShallowlyEqual(this.values, [...(this.obj).entries()]);
     }
 }
 

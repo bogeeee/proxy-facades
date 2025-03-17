@@ -11,6 +11,7 @@ import {getWriteListenersForObject, writeListenersForObject} from "../globalObje
 import {arraysAreShallowlyEqual, MapSet} from "../Util";
 import {installWriteTracker} from "../globalWriteTracking";
 import {WatchedProxyHandler} from "../watchedProxyFacade";
+import {RecordedReadOnProxiedObjectExt} from "../RecordedReadOnProxiedObjectExt";
 
 
 /**
@@ -102,7 +103,7 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
 
 }
 
-export class RecordedSet_has extends RecordedReadOnProxiedObject {
+export class RecordedSet_has extends RecordedReadOnProxiedObjectExt {
     value!: unknown;
     /**
      * Result of the .has call
@@ -121,18 +122,11 @@ export class RecordedSet_has extends RecordedReadOnProxiedObject {
         return this.result !== this.obj.has(this.value);
     }
 
-    onChange(listener: () => void, trackOriginal = false) {
-        if (trackOriginal) {
-            installWriteTracker(this.obj);
-        }
-        getWriteListenersForSet(this.obj).afterSpecificValueChanged.add(this.value, listener);
-        getWriteListenersForObject(this.obj).afterUnspecificWrite.add(listener);
-    }
-
-    offChange(listener: () => void) {
-        writeListenersForSet.get(this.obj)?.afterSpecificValueChanged.delete(this.value, listener);
-        writeListenersForObject.get(this.obj)?.afterUnspecificWrite.delete(listener);
-
+    getAffectingChangeListenerSets(target: this["obj"]) {
+        return [
+            getWriteListenersForSet(target).afterSpecificValueChanged.get4use(this.value),
+            getWriteListenersForObject(target)?.afterUnspecificWrite
+        ];
     }
 
     equals(other: RecordedRead) {
@@ -144,12 +138,10 @@ export class RecordedSet_has extends RecordedReadOnProxiedObject {
     }
 }
 
-export class RecordedSetValuesRead extends RecordedReadOnProxiedObject {
+export class RecordedSetValuesRead extends RecordedReadOnProxiedObjectExt {
     values: Array<unknown>;
 
-    protected get origObj() {
-        return this.obj as Set<unknown>;
-    }
+    obj!:Set<unknown>;
 
 
     constructor(values: Array<unknown>) {
@@ -157,17 +149,11 @@ export class RecordedSetValuesRead extends RecordedReadOnProxiedObject {
         this.values = values;
     }
 
-    onChange(listener: () => void, trackOriginal = false) {
-        if (trackOriginal) {
-            installWriteTracker(this.origObj);
-        }
-        getWriteListenersForSet(this.origObj).afterAnyValueChanged.add(listener);
-        getWriteListenersForObject(this.origObj).afterUnspecificWrite.add(listener);
-    }
-
-    offChange(listener: () => void) {
-        getWriteListenersForObject(this.origObj).afterUnspecificWrite.delete(listener);
-        getWriteListenersForSet(this.origObj).afterAnyValueChanged.delete(listener);
+    getAffectingChangeListenerSets(target: this["obj"]) {
+        return [
+            getWriteListenersForSet(target).afterAnyValueChanged,
+            getWriteListenersForObject(target).afterUnspecificWrite
+        ]
     }
 
     equals(other: RecordedRead): boolean {
@@ -179,7 +165,7 @@ export class RecordedSetValuesRead extends RecordedReadOnProxiedObject {
     }
 
     get isChanged(): boolean {
-        return !arraysAreShallowlyEqual(this.values, [...(this.origObj as Set<unknown>).values()]);
+        return !arraysAreShallowlyEqual(this.values, [...(this.obj).values()]);
     }
 }
 

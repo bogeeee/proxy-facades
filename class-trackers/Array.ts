@@ -11,6 +11,7 @@ import {arraysAreShallowlyEqual} from "../Util";
 import {getWriteListenersForObject, writeListenersForObject} from "../globalObjectWriteTracking";
 import {installWriteTracker} from "../globalWriteTracking";
 import {WatchedProxyHandler} from "../watchedProxyFacade";
+import {RecordedReadOnProxiedObjectExt} from "../RecordedReadOnProxiedObjectExt";
 
 
 /**
@@ -100,7 +101,7 @@ export class WriteTrackedArray<T> extends Array<T> implements DualUseTracker<Arr
 
 }
 
-export class RecordedArrayValuesRead extends RecordedReadOnProxiedObject {
+export class RecordedArrayValuesRead extends RecordedReadOnProxiedObjectExt {
     values: unknown[];
 
     protected get origObj() {
@@ -113,19 +114,12 @@ export class RecordedArrayValuesRead extends RecordedReadOnProxiedObject {
         this.values = values;
     }
 
-    onChange(listener: () => void, trackOriginal = false) {
-        if (trackOriginal) {
-            installWriteTracker(this.origObj);
-        }
-        getWriteListenersForObject(this.origObj).afterChangeOwnKeys_listeners.add(listener);
-        getWriteListenersForObject(this.origObj).afterChangeAnyProperty_listeners.add(listener);
-        getWriteListenersForObject(this.origObj).afterUnspecificWrite.add(listener);
-    }
-
-    offChange(listener: () => void) {
-        getWriteListenersForObject(this.origObj).afterUnspecificWrite.delete(listener);
-        getWriteListenersForObject(this.origObj).afterChangeAnyProperty_listeners.delete(listener);
-        getWriteListenersForObject(this.origObj).afterChangeOwnKeys_listeners.delete(listener);
+    getAffectingChangeListenerSets(target: this["obj"]) {
+        return [
+            getWriteListenersForObject(target).afterChangeOwnKeys_listeners,
+            getWriteListenersForObject(target).afterChangeAnyProperty_listeners,
+            getWriteListenersForObject(target).afterUnspecificWrite,
+        ]
     }
 
     equals(other: RecordedRead): boolean {

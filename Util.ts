@@ -51,6 +51,35 @@ export class MapSet<K, V> {
     get(key: K) {
         return this.map.get(key);
     }
+
+    /**
+     * @param key
+     * @return the set for the specified key (an empty one will be created if needed) on which you should call `add` or `delete` **immediately**, so no empty set is left there consuming memory.
+     * It is automatically cleaned up after the last delete
+     */
+    get4use(key: K) {
+        const thisMapSet = this;
+        let set = this.map.get(key);
+        if(set === undefined) {
+            set = new class extends Set<V>{
+                delete(value: V): boolean {
+                    const result = super.delete(value);
+                    if(this.size === 0) {
+                        thisMapSet.map.delete(key); // Clean up
+                    }
+                    return result;
+                }
+                add(value: V): this {
+                    if(thisMapSet.map.get(key) !== this) {
+                        throw new Error("This set is invalid. You must add/delete immediately after calling get4modify")
+                    }
+                    return super.add(value);
+                }
+            };
+            this.map.set(key, set);
+        }
+        return set;
+    }
 }
 
 /**
