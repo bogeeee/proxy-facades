@@ -1,6 +1,6 @@
 import {FacadeProxyHandler, ProxyFacade} from "./proxyFacade";
 import {throwError} from "./Util";
-import {installWriteTracker, objectHasWriteTrackerInstalled} from "./globalWriteTracking";
+import {installWriteTracker, objectHasWriteTrackerInstalled} from "./origWriteTracking";
 import {
     AfterChangeOwnKeysListener,
     AfterReadListener,
@@ -13,7 +13,7 @@ import {
     RecordedReadOnProxiedObject,
     runAndCallListenersOnce_after,
 } from "./common";
-import {getWriteListenersForObject, writeListenersForObject} from "./globalObjectWriteTracking";
+import {getWriteListenersForObject, writeListenersForObject} from "./origObjectWriteTracking";
 import _ from "underscore"
 import {getTrackingConfigFor} from "./class-trackers/index";
 import {RecordedReadOnProxiedObjectExt} from "./RecordedReadOnProxiedObjectExt";

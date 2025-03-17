@@ -1,8 +1,9 @@
-// This file has functions / classes that allow to watch writes to objects (or arrays/sets/maps) **without proxies**
+// This file has functions / classes that allow to watch writes to the original unproxied objects (or arrays/sets/maps)
+// unproxied=not part of a proxy facade. Technically this can install Proxys as the prototype, to catch writes.
 
 
 import {runAndCallListenersOnce_after} from "./common";
-import {ObjectProxyHandler, writeListenersForObject} from "./globalObjectWriteTracking";
+import {ObjectProxyHandler, writeListenersForObject} from "./origObjectWriteTracking";
 import {getTrackingConfigFor} from "./class-trackers/index";
 
 

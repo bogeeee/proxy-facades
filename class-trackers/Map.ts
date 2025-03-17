@@ -7,9 +7,9 @@ import {
     RecordedReadOnProxiedObject,
     runAndCallListenersOnce_after
 } from "../common";
-import {getWriteListenersForObject, writeListenersForObject} from "../globalObjectWriteTracking";
+import {getWriteListenersForObject, writeListenersForObject} from "../origObjectWriteTracking";
 import {arraysAreShallowlyEqual, arraysWithEntriesAreShallowlyEqual, MapSet} from "../Util";
-import {installWriteTracker} from "../globalWriteTracking";
+import {installWriteTracker} from "../origWriteTracking";
 import {WatchedProxyHandler} from "../watchedProxyFacade";
 import {RecordedReadOnProxiedObjectExt} from "../RecordedReadOnProxiedObjectExt";
 
