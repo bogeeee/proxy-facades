@@ -144,13 +144,6 @@ export class RecordedUnspecificRead extends RecordedReadOnProxiedObjectExt{
  */
 export class WatchedProxyFacade extends ProxyFacade<WatchedProxyHandler> {
     // ** Configuration**
-    /**
-     * Watches also writes that are not made through a proxy of this WatchedProxyFacade by installing a setter (property accessor) on each of the desired properties
-     * Works only for **individual** properties which you are explicitly listening on, and not on the whole Facade.
-     * See {@link onAfterWrite} for the listener
-     *
-     */
-    public watchWritesFromOutside = false; //
 
     trackReadsOnPrototype = false;
 
@@ -186,35 +179,22 @@ export class WatchedProxyFacade extends ProxyFacade<WatchedProxyHandler> {
 
     /**
      * Watches for writes on a specified property
-     * @deprecated Watching is global and not bound to this WatchedProxyFacade
      * @param obj
      * @param key Not restricted here (for the tests), but it must not be number !
      * @param listener
      */
     onAfterWriteOnProperty<O extends  object, K extends keyof O>(obj: O, key: K, listener:  AfterWriteListener) {
-        if(this.watchWritesFromOutside) {
-            throw new Error("TODO");
-        }
-        else {
-            getWriteListenersForObject(obj).afterChangeSpecificProperty.add(key as ObjKey, listener);
-        }
-
+        getWriteListenersForObject(obj).afterChangeSpecificProperty.add(key as ObjKey, listener);
     }
 
     /**
      * Watches for writes on a specified property
-     * @deprecated Watching is global and not bound to this WatchedProxyFacade
      * @param obj
      * @param key Not restricted here (for the tests), but it must not be number !
      * @param listener
      */
     offAfterWriteOnProperty<O extends  object, K extends keyof O>(obj: O, key: K, listener:  AfterWriteListener) {
-        if(this.watchWritesFromOutside) {
-            throw new Error("TODO");
-        }
-        else {
-            writeListenersForObject.get(obj)?.afterChangeSpecificProperty.add(key as ObjKey, listener);
-        }
+        writeListenersForObject.get(obj)?.afterChangeSpecificProperty.add(key as ObjKey, listener);
     }
 
     protected crateHandler(target: object, facade: any): WatchedProxyHandler {
