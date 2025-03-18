@@ -2,18 +2,15 @@
 // unproxied=not part of a proxy facade. Technically this can install Proxys as the prototype, to catch writes.
 
 
-import {runAndCallListenersOnce_after} from "./common";
+import {PartialGraph, runAndCallListenersOnce_after} from "./common";
 import {ObjectProxyHandler, writeListenersForObject} from "./objectChangeTracking";
 import {getTrackingConfigFor} from "./class-trackers/index";
 import {isProxyForAFacade} from "./proxyFacade";
 import {throwError} from "./Util";
 
+export const changeTrackedOrigObjects = new PartialGraph();
 
-const objectsWithChangeTrackerInstalled = new WeakSet<object>();
 
-export function objectHasChangeTrackerInstalled(obj: object) {
-    return objectsWithChangeTrackerInstalled.has(obj);
-}
 
 /**
  *
@@ -21,7 +18,7 @@ export function objectHasChangeTrackerInstalled(obj: object) {
  */
 export function installChangeTracker(obj: object) {
     !isProxyForAFacade(obj) || throwError("Cannot install change tracker on a proxy. The proxy should already support change tracking.");
-    if(objectHasChangeTrackerInstalled(obj)) {
+    if(changeTrackedOrigObjects.hasObj(obj)) {
         return;
     }
 
@@ -45,7 +42,7 @@ export function installChangeTracker(obj: object) {
     }
     inner();
 
-    objectsWithChangeTrackerInstalled.add(obj);
+    changeTrackedOrigObjects._register(obj);
 }
 
 /**
@@ -54,7 +51,7 @@ export function installChangeTracker(obj: object) {
  * @param key
  */
 export function deleteProperty<O extends object>(obj: O, key: keyof O) {
-    if(!objectHasChangeTrackerInstalled(obj)) {
+    if(!changeTrackedOrigObjects.hasObj(obj)) {
         return delete obj[key];
     }
 

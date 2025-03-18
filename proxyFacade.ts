@@ -1,10 +1,18 @@
 /**
  *
  */
-import {getPropertyDescriptor, GetterFlags, ObjKey, SetterFlags} from "./common";
+import {
+    getPropertyDescriptor,
+    GetterFlags,
+    objectMembershipInGraphs,
+    ObjKey,
+    PartialGraph,
+    SetterFlags
+} from "./common";
 import {deleteProperty} from "./origChangeTracking";
 
-export abstract class ProxyFacade<HANDLER extends FacadeProxyHandler<any>> {
+
+export abstract class ProxyFacade<HANDLER extends FacadeProxyHandler<any>> extends PartialGraph {
     // *** Configuration: ***
     /**
      * Treats them like functions, meaning, they get a proxied 'this'. WatchProxies will see the access to the real properties
@@ -12,7 +20,6 @@ export abstract class ProxyFacade<HANDLER extends FacadeProxyHandler<any>> {
     public propertyAccessorsAsWhiteBox = true;
 
     // *** State: ***
-    protected proxies = new WeakSet<object>();
     protected objectsToProxyHandlers = new WeakMap<object, HANDLER>();
 
     protected abstract crateHandler(target: object, facade: any): HANDLER;
@@ -22,7 +29,7 @@ export abstract class ProxyFacade<HANDLER extends FacadeProxyHandler<any>> {
             return value;
         }
 
-        if(this.proxies.has(value)) { // Already our proxied object ?
+        if(this.hasObj(value)) { // Already our proxied object ?
             return value;
         }
 
@@ -34,8 +41,8 @@ export abstract class ProxyFacade<HANDLER extends FacadeProxyHandler<any>> {
         handlerForObj = this.crateHandler(value, this);
         // register:
         proxyToProxyHandler.set(handlerForObj.proxy, handlerForObj);
-        this.proxies.add(handlerForObj.proxy);
         this.objectsToProxyHandlers.set(value, handlerForObj);
+        this._register(handlerForObj.proxy);
 
 
         return handlerForObj.proxy as O;

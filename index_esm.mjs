@@ -18,7 +18,7 @@ export const getGlobalOrig = cjsProxyFacade.getGlobalOrig;
 
 import cjsOrigChangeTracking from "./origChangeTracking"
 export const deleteProperty = cjsOrigChangeTracking.deleteProperty;
-export const objectHasChangeTrackerInstalled = cjsOrigChangeTracking.objectHasChangeTrackerInstalled;
+export const changeTrackedOrigObjects = cjsOrigChangeTracking.changeTrackedOrigObjects;
 export const installChangeTracker = cjsOrigChangeTracking.installChangeTracker;
 
 import cjsClassTrackers_Array from "./class-trackers/Array";

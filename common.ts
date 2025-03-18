@@ -1,5 +1,5 @@
 import {WatchedProxyHandler} from "./watchedProxyFacade";
-import {arraysAreEqualsByPredicateFn, read, throwError} from "./Util";
+import {arraysAreEqualsByPredicateFn, read, throwError, WeakMapSet} from "./Util";
 import {getGlobalOrig, ProxyFacade} from "./proxyFacade";
 
 export type ObjKey = string | symbol;
@@ -298,3 +298,45 @@ export function makeIteratorTranslateValue<V, IT extends Iterator<V>>(iterator: 
     iterator.next = next; // Patch iterator
     return iterator;
 }
+
+
+
+export class PartialGraph {
+    /**
+     * True means, it spreads it's self when members are read or set. Not yet implemented for non-proxy-facades
+     */
+    viral = false;
+
+    /**
+     * Called after a change has been made to any object inside this graph
+     * Note: There are also listeners for specified properties/situations (which are more capable)
+     * @protected
+     */
+    _afterChangeListeners = new Set<AfterWriteListener>()
+
+    /**
+     *
+     * @param listener Called after a change has been made to any object inside this graph
+     */
+    onAfterChange(listener: AfterWriteListener) {
+        this._afterChangeListeners.add(listener);
+    }
+
+    /**
+     * Unregister listener from {@see PartialGraph#onAfterChange}
+     * @param listener
+     */
+    offAfterChange(listener: AfterWriteListener) {
+        this._afterChangeListeners.delete(listener);
+    }
+
+    hasObj(obj: object) {
+        return objectMembershipInGraphs.get(obj)?.has(this);
+    }
+
+    _register(obj: object) {
+        objectMembershipInGraphs.add(obj, this);
+    }
+}
+
+export const objectMembershipInGraphs = new WeakMapSet<object, PartialGraph>();

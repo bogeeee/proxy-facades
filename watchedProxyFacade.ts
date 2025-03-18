@@ -1,13 +1,12 @@
 import {FacadeProxyHandler, ProxyFacade} from "./proxyFacade";
 import {throwError} from "./Util";
-import {installChangeTracker, objectHasChangeTrackerInstalled} from "./origChangeTracking";
 import {
     AfterChangeOwnKeysListener,
     AfterReadListener,
     AfterWriteListener,
     checkEsRuntimeBehaviour,
     getPropertyDescriptor,
-    IWatchedProxyHandler_common,
+    IWatchedProxyHandler_common, objectMembershipInGraphs,
     ObjKey,
     RecordedRead,
     RecordedReadOnProxiedObject,
@@ -154,14 +153,6 @@ export class WatchedProxyFacade extends ProxyFacade<WatchedProxyHandler> {
      * @protected
      */
     _afterReadListeners = new Set<AfterReadListener>()
-
-    /**
-     * Called after a write has been made to any object inside this facade
-     * Note: There are also listeners for specified properties (which are more capable)
-     * TODO: Do we need this ?
-     * @protected
-     */
-    _afterWriteListeners = new Set<AfterWriteListener>()
 
 
     onAfterRead(listener: AfterReadListener) {
@@ -339,6 +330,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
                 callListeners(writeListeners?.afterChangeOwnKeys);
             }
             callListeners(writeListeners?.afterAnyChange);
+            objectMembershipInGraphs.get(this.proxy)?.forEach(graph => callListeners(graph._afterChangeListeners));
         });
 
     }

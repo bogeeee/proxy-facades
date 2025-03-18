@@ -6,7 +6,7 @@ import {
 import _ from "underscore"
 import {arraysAreEqualsByPredicateFn, isObject, read, visitReplace} from "./Util";
 import {Clazz, ObjKey, RecordedRead, recordedReadsArraysAreEqual} from "./common";
-import {deleteProperty, installChangeTracker} from "./origChangeTracking";
+import {changeTrackedOrigObjects, deleteProperty, installChangeTracker} from "./origChangeTracking";
 import {ProxyFacade} from "./proxyFacade";
 import exp from "constants";
 import {fail} from "assert";
@@ -639,6 +639,7 @@ describe('WatchedProxyFacade record read and watch it', () => {
         }
         if(provideTestSetup().writerFn) {
             testWriterConsitency(provideTestSetup as any);
+            testPartialGraph_onchange_withFriterFn(provideTestSetup as any);
         }
 
         for(const withLayeredFacades of [false, true]) {
@@ -1591,6 +1592,39 @@ describe("Returning proxies", () => {
     })
 });
 
+describe("PartialGraph#onChange", () => {
+    test("PartialGraph#onChange's listeners should be called", () => {
+        const orig = {
+            users: [{id: 0, name: "Heini"}]
+        } as any
+        const proxyFacade = new WatchedProxyFacade();
+        let called = 0;
+        const changeHandler = vitest.fn(() => called++)
+        proxyFacade.onAfterChange(changeHandler);
+        const proxy = proxyFacade.getProxyFor(orig);
+
+        proxy.someField = true;
+        expect(called).toEqual(1);
+
+        called = 0;
+        proxy.users.push({});
+        expect(changeHandler).toBe(1); // Might be even more
+
+    });
+
+    test("changeTrackedOrigObjects#onChange's listeners should be called", ()=> {
+        const orig = {} as any
+        installChangeTracker(orig);
+        const changeHandler = vitest.fn(() => {
+            const i = 0; // set breakpoint here
+        })
+        changeTrackedOrigObjects.onAfterChange(changeHandler);
+        orig.someField = true;
+        expect(changeHandler).toBeCalledTimes(1);
+
+    });
+})
+
 describe("Iterators", () => {
     // Mostly already tested by the "Returning proxies" tests
     test("Iterators with return should not error", () => {
@@ -1648,3 +1682,24 @@ function testWriterConsitency<T extends object>(provideTestSetup: () => {origObj
     }
 }
 
+
+const testPartialGraph_onchange_withFriterFn_alreadyHandled = new Set<(obj: any) => void>();
+function testPartialGraph_onchange_withFriterFn<T extends object>(provideTestSetup: () => {origObj: T, writerFn: (obj: T) => void}) {
+    const testSetup = provideTestSetup()
+
+    if(testPartialGraph_onchange_withFriterFn_alreadyHandled.has(testSetup.writerFn)) { // Already handled?
+        return;
+    }
+    testPartialGraph_onchange_withFriterFn_alreadyHandled.add(testSetup.writerFn);
+
+    test(`${fnToString(testSetup.writerFn)}: PartialGraph#onChanged should be called`, () => {
+        let watchedProxyFacade = new WatchedProxyFacade();
+        const proxy = watchedProxyFacade.getProxyFor(testSetup.origObj);
+        const changeHandler = vitest.fn(() => {
+            const i = 0; // set breakpoint here
+        });
+        watchedProxyFacade.onAfterChange(changeHandler);
+        testSetup.writerFn!(proxy);
+        expect(changeHandler).toBeCalledTimes(1); // writerFn may be not written with "no more than 1 change restriction" in mind.
+    });
+}
