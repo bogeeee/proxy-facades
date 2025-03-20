@@ -36,7 +36,7 @@ export function getChangeHooksForSet(set: Set<unknown>) {
  * Can be either used as a supervisor-class in a WatchedProxyHandler, or installed on the non-proxied object via Object.setPrototypeOf
  * The "this" may be different in these cases.
  */
-export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>{
+export class SetChangeTracker<T> extends Set<T> implements DualUseTracker<Set<T>>{
 
     get _watchedProxyHandler(): IWatchedProxyHandler_common | undefined {
         return undefined;
@@ -158,7 +158,7 @@ export class RecordedSetValuesRead extends RecordedReadOnProxiedObjectExt {
     }
 }
 
-export class WatchedSet_for_WatchedProxyHandler<T> extends Set<T> implements ForWatchedProxyHandler<Set<T>> {
+export class SetReadTracker<T> extends Set<T> implements ForWatchedProxyHandler<Set<T>> {
     get _watchedProxyHandler(): WatchedProxyHandler {
         throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the handler when called through the handler
     }
@@ -239,7 +239,7 @@ export class WatchedSet_for_WatchedProxyHandler<T> extends Set<T> implements For
 
 export const config = new class extends ClassTrackingConfiguration {
     clazz=Set;
-    readTracker= WatchedSet_for_WatchedProxyHandler;
-    changeTracker = WriteTrackedSet
+    readTracker= SetReadTracker;
+    changeTracker = SetChangeTracker
     receiverMustBeNonProxied = true;
 }

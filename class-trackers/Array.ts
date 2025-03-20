@@ -39,7 +39,7 @@ export function getChangeHooksForArray(array: unknown[]) {
  * Can be either used as a supervisor-class in a WatchedProxyHandler, or installed on the non-proxied object via Object.setPrototypeOf
  * The "this" may be different in these cases.
  */
-export class WriteTrackedArray<T> extends Array<T> implements DualUseTracker<Array<T>>{
+export class ArrayChangeTracker<T> extends Array<T> implements DualUseTracker<Array<T>>{
 
 
     // TODO: In the future, implement more fine granular change listeners that act on change of a certain index.
@@ -128,7 +128,7 @@ export class RecordedArrayValuesRead extends RecordedReadOnProxiedObjectExt {
 /**
  * Patches methods / accessors
  */
-export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements ForWatchedProxyHandler<Array<T>> {
+export class ArrayReadTracker<T> extends Array<T> implements ForWatchedProxyHandler<Array<T>> {
     get _watchedProxyHandler(): WatchedProxyHandler {
         throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the handler when called through the handler
     }
@@ -217,8 +217,8 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
 
 export const config = new class extends ClassTrackingConfiguration {
     clazz= Array;
-    readTracker= WatchedArray_for_WatchedProxyHandler;
-    changeTracker = WriteTrackedArray
+    readTracker= ArrayReadTracker;
+    changeTracker = ArrayChangeTracker
     /**
      * Built-in Methods, which are using fields / calling methods on the proxy transparently/loyally, so those methods don't call/use internal stuff directly.
      * Tested with, see dev_generateEsRuntimeBehaviourCheckerCode.ts

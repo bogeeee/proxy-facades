@@ -40,7 +40,7 @@ export function getChangeHooksForMap(map: Map<unknown,unknown>) {
  * Can be either used as a supervisor-class in a WatchedProxyHandler, or installed on the non-proxied object via Object.setPrototypeOf
  * The "this" may be different in these cases.
  */
-export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map<K,V>>{
+export class MapChangeTracker<K,V> extends Map<K,V> implements DualUseTracker<Map<K,V>>{
 
     get _watchedProxyHandler(): IWatchedProxyHandler_common | undefined {
         return undefined;
@@ -276,7 +276,7 @@ export class RecordedMapEntriesRead extends RecordedReadOnProxiedObjectExt {
     }
 }
 
-export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implements ForWatchedProxyHandler<Map<K, V>> {
+export class MapReadTracker<K, V> extends Map<K, V> implements ForWatchedProxyHandler<Map<K, V>> {
     get _watchedProxyHandler(): WatchedProxyHandler {
         throw new Error("not calling from inside a WatchedProxyHandler"); // Will return the handler when called through the handler
     }
@@ -379,8 +379,8 @@ export class WatchedMap_for_WatchedProxyHandler<K, V> extends Map<K, V> implemen
 
 export const config = new class extends ClassTrackingConfiguration {
     clazz=Map;
-    readTracker= WatchedMap_for_WatchedProxyHandler;
-    changeTracker = WriteTrackedMap
+    readTracker= MapReadTracker;
+    changeTracker = MapChangeTracker
 
     /**
      * Built-in Methods, which are using fields / calling methods on the proxy transparently/loyally, so those methods don't call/use internal stuff directly.
