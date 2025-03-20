@@ -37,11 +37,9 @@
 
   },
   "dependencies": {
-    "@types/underscore": "^1.11.4",
-    "@types/node": "^20.12.7",
     "underscore": "^1.13.3",
-    "clone": "^2.1.2",
-    "@types/clone": "^2.1.4"
+    "@types/underscore": "^1.11.4",
+    "@types/node": "^20.12.7"
   },
   "devDependencies": {
     "tsx": "^4.7.0",
