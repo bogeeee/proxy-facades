@@ -1608,7 +1608,7 @@ describe("PartialGraph#onChange", () => {
 
         called = 0;
         proxy.users.push({});
-        expect(changeHandler).toBe(1); // Might be even more
+        expect(called).toBe(1); // Might be even more
 
     });
 
