@@ -1592,8 +1592,8 @@ describe("Returning proxies", () => {
     })
 });
 
-describe("PartialGraph#onChange", () => {
-    test("PartialGraph#onChange's listeners should be called", () => {
+describe("PartialGraph#onAfterChange", () => {
+    test("ProxyFacade#onAfterChange's listeners should be called", () => {
         const orig = {
             users: [{id: 0, name: "Heini"}]
         } as any
@@ -1612,6 +1612,38 @@ describe("PartialGraph#onChange", () => {
 
     });
 
+    /**
+     * Quick theoretical use case. Not really a good regression test.
+     */
+    test("Proxyfacade to track objects in an imaginary react component", () => {
+        const orig = {
+            form: {
+                name: "",
+                address: ""
+            }
+        }
+        const wachtedCompProxyFacade = new WatchedProxyFacade();
+        let wc_onAfterChange_calledTimes = 0;
+        wachtedCompProxyFacade.onAfterChange(() => wc_onAfterChange_calledTimes++);
+        const wcProxy = wachtedCompProxyFacade.getProxyFor(orig);
+
+        const facadeForChild = new WatchedProxyFacade();
+        let facadeForChild_onChange_onAfterChange_calledTimes = 0;
+        facadeForChild.onAfterChange(()=> facadeForChild_onChange_onAfterChange_calledTimes++)
+
+        wcProxy.form = {name: "loadedInitial", address: "loadedAddress"};
+        expect(wc_onAfterChange_calledTimes).toEqual(1);
+        expect(facadeForChild_onChange_onAfterChange_calledTimes).toEqual(0); // this should not be called
+
+        wc_onAfterChange_calledTimes = 0;
+        facadeForChild_onChange_onAfterChange_calledTimes=0
+        const proxyForChild = facadeForChild.getProxyFor(wcProxy.form);
+        proxyForChild.name="changed";
+        expect(wc_onAfterChange_calledTimes).toEqual(1);
+        expect(facadeForChild_onChange_onAfterChange_calledTimes).toEqual(1);
+
+    });
+
     test("changeTrackedOrigObjects#onChange's listeners should be called", ()=> {
         const orig = {} as any
         installChangeTracker(orig);
@@ -1623,6 +1655,8 @@ describe("PartialGraph#onChange", () => {
         expect(changeHandler).toBeCalledTimes(1);
 
     });
+
+
 })
 
 describe("Iterators", () => {
