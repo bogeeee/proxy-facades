@@ -9,11 +9,10 @@ import {isProxyForAFacade} from "./proxyFacade";
 export abstract class RecordedReadOnProxiedObjectExt extends RecordedReadOnProxiedObject {
 
     /**
-     * TODO: Rename to onAfterChange
      * @param listener
      * @param trackOriginal
      */
-    onChange(listener: () => void, trackOriginal = false) {
+    onAfterChange(listener: () => void, trackOriginal = false) {
         this.getAffectingChangeHooks(this.proxyHandler.proxy).forEach(eventHook => eventHook.afterListeners.add(listener));
         if (trackOriginal) {
             if(!isProxyForAFacade(this.obj)) {
@@ -24,10 +23,9 @@ export abstract class RecordedReadOnProxiedObjectExt extends RecordedReadOnProxi
     }
 
     /**
-     * TODO: Rename to offAfterChange
-     * @param listener
+     *
      */
-    offChange(listener: () => void) {
+    offAfterChange(listener: () => void) {
         this.getAffectingChangeHooks(this.obj).forEach(eventHook => eventHook.afterListeners.delete(listener));
         this.getAffectingChangeHooks(this.proxyHandler.proxy).forEach(eventHook => eventHook.afterListeners.delete(listener));
     }

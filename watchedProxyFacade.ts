@@ -34,11 +34,11 @@ export class RecordedValueRead extends RecordedRead{
         throw new Error("Cannot check if simple value (not on object) has changed.");
     }
 
-    onChange(listener: () => void, trackOriginal = false) {
+    onAfterChange(listener: () => void, trackOriginal = false) {
         throw new Error("Cannot listen for changes on simple value (not on object)");
     }
 
-    offChange(listener: () => void) {
+    offAfterChange(listener: () => void) {
     }
 
     equals(other: RecordedRead) {

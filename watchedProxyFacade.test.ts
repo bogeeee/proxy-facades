@@ -667,19 +667,19 @@ describe('WatchedProxyFacade record read and watch it', () => {
                             const i = 0; // set breakpoint here
                         });
                         if (mode === "With writes through WatchedProxyFacade proxy") {
-                            lastRead.onChange(changeHandler);
+                            lastRead.onAfterChange(changeHandler);
                             testSetup.writerFn!(proxy);
                         } else if (mode === "With writes through installed write tracker") {
-                            lastRead.onChange(changeHandler, true);
+                            lastRead.onAfterChange(changeHandler, true);
                             testSetup.writerFn!(origObj);
                         } else if (mode === "With writes through 2 layered WatchedProxyFacade facades") {
-                            lastRead.onChange(changeHandler, true);
+                            lastRead.onAfterChange(changeHandler, true);
                             let watchedProxyFacade2 = new WatchedProxyFacade();
                             const proxy2 = watchedProxyFacade2.getProxyFor(origObj);
                             testSetup.writerFn!(proxy2);
                         }
                         expect(changeHandler).toBeCalledTimes(1);
-                        lastRead.offChange(changeHandler);
+                        lastRead.offAfterChange(changeHandler);
                     }
 
                     //falseWriteFn:
@@ -698,19 +698,19 @@ describe('WatchedProxyFacade record read and watch it', () => {
                             const i = 0; // set breakpoint here
                         });
                         if (mode === "With writes through WatchedProxyFacade proxy") {
-                            lastRead.onChange(changeHandler);
+                            lastRead.onAfterChange(changeHandler);
                             testSetup.falseWritesFn!(proxy);
                         } else if (mode === "With writes through installed write tracker") {
-                            lastRead.onChange(changeHandler, true);
+                            lastRead.onAfterChange(changeHandler, true);
                             testSetup.falseWritesFn!(origObj);
                         } else if (mode === "With writes through 2 layered WatchedProxyFacade facades") {
-                            lastRead.onChange(changeHandler, true);
+                            lastRead.onAfterChange(changeHandler, true);
                             let watchedProxyFacade2 = new WatchedProxyFacade();
                             const proxy2 = watchedProxyFacade2.getProxyFor(origObj);
                             testSetup.falseWritesFn!(proxy2);
                         }
                         expect(changeHandler).toBeCalledTimes(0);
-                        lastRead.offChange(changeHandler);
+                        lastRead.offAfterChange(changeHandler);
                     }
 
 
@@ -730,20 +730,20 @@ describe('WatchedProxyFacade record read and watch it', () => {
                         });
 
                         if (mode === "With writes through WatchedProxyFacade proxy") {
-                            lastRead.onChange(changeHandler);
+                            lastRead.onAfterChange(changeHandler);
                             testSetup.writerFn!(proxy);
                         } else if (mode === "With writes through installed write tracker") {
-                            lastRead.onChange(changeHandler, true);
+                            lastRead.onAfterChange(changeHandler, true);
                             testSetup.writerFn!(origObj);
                         } else if (mode === "With writes through 2 layered WatchedProxyFacade facades") {
-                            lastRead.onChange(changeHandler, true);
+                            lastRead.onAfterChange(changeHandler, true);
                             let watchedProxyFacade2 = new WatchedProxyFacade();
                             const proxy2 = watchedProxyFacade2.getProxyFor(origObj);
                             testSetup.writerFn!(proxy2);
                         }
 
                         expect(changeHandler).toBeCalledTimes(0);
-                        lastRead.offChange(changeHandler);
+                        lastRead.offAfterChange(changeHandler);
                     }
                 });
             }
@@ -759,7 +759,7 @@ describe('WatchedProxyFacade record read and watch it', () => {
                     watchedProxyFacade.onAfterRead(r => {
                         reads.push(r as RecordedPropertyRead);
                         if (withTrackOriginal) {
-                            r.onChange(() => {
+                            r.onAfterChange(() => {
                             }, true);
                         }
                     });
@@ -793,10 +793,10 @@ describe('WatchedProxyFacade record read and watch it', () => {
                 const changeHandler = vitest.fn(() => {
                     numChanges++;
                 });
-                lastRead.onChange(changeHandler);
+                lastRead.onAfterChange(changeHandler);
                 testSetup.writerFn!(proxy);
                 expect(numChanges).toBeGreaterThan(0)
-                lastRead.offChange(changeHandler);
+                lastRead.offAfterChange(changeHandler);
                 numChanges = 0;
                 testSetup.writerFn!(proxy);
                 expect(numChanges).toBe(0);

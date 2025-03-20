@@ -13,11 +13,11 @@ export abstract class RecordedRead {
     /**
      *
      * @param listener
-     * @param trackOriginal true to install a tracker on the non-proxied (by this facade) original object
+     * @param trackOriginal true to install a tracker on the non-proxied- (by this facade) original object
      */
-    abstract onChange(listener: () => void, trackOriginal?: boolean): void;
+    abstract onAfterChange(listener: () => void, trackOriginal?: boolean): void;
 
-    abstract offChange(listener: () => void): void;
+    abstract offAfterChange(listener: () => void): void;
 }
 
 export abstract class RecordedReadOnProxiedObject extends RecordedRead {
