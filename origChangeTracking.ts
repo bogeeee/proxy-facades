@@ -2,8 +2,12 @@
 // unproxied=not part of a proxy facade. Technically this can install Proxys as the prototype, to catch writes.
 
 
-import {PartialGraph, runAndCallListenersOnce_after} from "./common";
-import {ObjectProxyHandler, writeListenersForObject} from "./objectChangeTracking";
+import {PartialGraph, runChangeOperation, UnspecificObjectChange} from "./common";
+import {
+    ObjectProxyHandler,
+    changeHooksForObject,
+    getChangeHooksForObject
+} from "./objectChangeTracking";
 import {getTrackingConfigFor} from "./class-trackers/index";
 import {isProxyForAFacade} from "./proxyFacade";
 import {throwError} from "./Util";
@@ -55,20 +59,14 @@ export function deleteProperty<O extends object>(obj: O, key: keyof O) {
         return delete obj[key];
     }
 
-    return runAndCallListenersOnce_after(obj, (callListeners) => {
-        const doesExist = Object.getOwnPropertyDescriptor(obj, key) !== undefined;
+    const doesExist = Object.getOwnPropertyDescriptor(obj, key) !== undefined;
+    if (!doesExist) {
+        return true;
+    }
 
-        if (doesExist) {
-            //@ts-ignore
-            obj[key] = undefined; // Set to undefined first, so property change listeners will get informed
-        }
-
-        const result = delete obj[key];
-        if (doesExist) {
-            callListeners(writeListenersForObject.get(obj)?.afterChangeOwnKeys);
-            callListeners(writeListenersForObject.get(obj)?.afterAnyChange);
-        }
-
-        return result;
+    return runChangeOperation(obj, new UnspecificObjectChange(obj), [getChangeHooksForObject(obj).changeOwnKeys], () => {
+        //@ts-ignore
+        obj[key] = undefined; // Set to undefined first, so property change listeners will get informed
+        return delete obj[key];
     });
 }

@@ -1,14 +1,14 @@
 import {
-    AfterWriteListener, dualUseTracker_callOrigMethodOnTarget, ClassTrackingConfiguration,
+    ChangeListener, dualUseTracker_callOrigMethodOnTarget, ClassTrackingConfiguration,
     DualUseTracker,
     ForWatchedProxyHandler, IWatchedProxyHandler_common, makeIteratorTranslateValue,
     ObjKey,
     RecordedRead,
     RecordedReadOnProxiedObject,
-    runAndCallListenersOnce_after
+    EventHook, runChangeOperation, UnspecificObjectChange
 } from "../common";
-import {getWriteListenersForObject, writeListenersForObject} from "../objectChangeTracking";
-import {arraysAreShallowlyEqual, MapSet} from "../Util";
+import {getChangeHooksForObject, changeHooksForObject} from "../objectChangeTracking";
+import {arraysAreShallowlyEqual, MapSet, newDefaultMap} from "../Util";
 import {WatchedProxyHandler} from "../watchedProxyFacade";
 import {RecordedReadOnProxiedObjectExt} from "../RecordedReadOnProxiedObjectExt";
 
@@ -16,18 +16,18 @@ import {RecordedReadOnProxiedObjectExt} from "../RecordedReadOnProxiedObjectExt"
 /**
  * Listeners for one set.
  * Note for specificity: There will be only one of the **change** events fired. The Recorded...Read.onChange handler will add the listeners to all possible candidates. It's this way around.
- * {@link ObjectWriteListeners} are also subscribed on Sets
+ * {@link ObjectChangeHooks} are also subscribed on Sets
  */
-class SetWriteListeners {
-    afterSpecificValueChanged = new MapSet<unknown, AfterWriteListener>();
-    afterAnyValueChanged = new Set<AfterWriteListener>();
+class SetChangeHooks {
+    afterSpecificValueChanged = newDefaultMap<unknown, EventHook>( () => new EventHook());
+    afterAnyValueChanged = new EventHook();
 }
 
-export const writeListenersForSet = new WeakMap<Set<unknown>, SetWriteListeners>();
-export function getWriteListenersForSet(set: Set<unknown>) {
-    let result = writeListenersForSet.get(set);
+export const changeHooksForSet = new WeakMap<Set<unknown>, SetChangeHooks>();
+export function getChangeHooksForSet(set: Set<unknown>) {
+    let result = changeHooksForSet.get(set);
     if(result === undefined) {
-        writeListenersForSet.set(set, result = new SetWriteListeners());
+        changeHooksForSet.set(set, result = new SetChangeHooks());
     }
     return result;
 }
@@ -42,11 +42,8 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
         return undefined;
     }
 
-    protected _fireAfterUnspecificWrite() {
-        runAndCallListenersOnce_after(this, (callListeners) => {
-            callListeners(writeListenersForObject.get(this)?.afterUnspecificChange);
-            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
-        });
+    protected _withUnspecificChange<R>(changeFn: () => R): R {
+        return runChangeOperation(this, new UnspecificObjectChange(this), [getChangeHooksForObject(this).unspecificChange], changeFn)
     }
 
     /**
@@ -69,34 +66,27 @@ export class WriteTrackedSet<T> extends Set<T> implements DualUseTracker<Set<T>>
         if(this._target.has(value)) { // No change?
             return this;
         }
-        runAndCallListenersOnce_after(this, (callListeners) => {
-            const result = dualUseTracker_callOrigMethodOnTarget(this, "add", [value]);
-            callListeners(writeListenersForSet.get(this)?.afterSpecificValueChanged.get(value));
-            callListeners(writeListenersForSet.get(this)?.afterAnyValueChanged);
-            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
+        runChangeOperation(this, new UnspecificObjectChange(this),[getChangeHooksForSet(this).afterSpecificValueChanged.get(value), getChangeHooksForSet(this).afterAnyValueChanged],() => {
+            dualUseTracker_callOrigMethodOnTarget(this, "add", [value]);
         });
         return this;
     }
 
     delete(value: T): boolean {
         value = this._watchedProxyHandler?this._watchedProxyHandler.getFacade().getUnproxiedValue(value):value; // Translate to unproxied value
-        return runAndCallListenersOnce_after(this, (callListeners) => {
-            const result = dualUseTracker_callOrigMethodOnTarget(this, "delete", [value]);
-            if(result) { // deleted?
-                callListeners(writeListenersForSet.get(this)?.afterSpecificValueChanged.get(value));
-                callListeners(writeListenersForSet.get(this)?.afterAnyValueChanged);
-                callListeners(writeListenersForObject.get(this)?.afterAnyChange);
-            }
-            return result
+
+        if(!this._target.has(value)) { // no change?
+            return false;
+        }
+
+        return runChangeOperation(this, new UnspecificObjectChange(this),[getChangeHooksForSet(this).afterSpecificValueChanged.get(value), getChangeHooksForSet(this).afterAnyValueChanged],() => {
+            return dualUseTracker_callOrigMethodOnTarget(this, "delete", [value]);
         });
     }
 
     clear() {
-        runAndCallListenersOnce_after(this, (callListeners) => {
-            const result = dualUseTracker_callOrigMethodOnTarget(this, "clear", []);
-            callListeners(writeListenersForSet.get(this)?.afterAnyValueChanged);
-            callListeners(writeListenersForObject.get(this)?.afterUnspecificChange);
-            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
+        return runChangeOperation(this, new UnspecificObjectChange(this),[getChangeHooksForSet(this).afterAnyValueChanged, getChangeHooksForObject(this).unspecificChange],() => {
+            return dualUseTracker_callOrigMethodOnTarget(this, "clear", []);
         });
     }
 
@@ -121,10 +111,10 @@ export class RecordedSet_has extends RecordedReadOnProxiedObjectExt {
         return this.result !== this.obj.has(this.value);
     }
 
-    getAffectingChangeListenerSets(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["obj"]) {
         return [
-            getWriteListenersForSet(target).afterSpecificValueChanged.get4use(this.value),
-            getWriteListenersForObject(target)?.afterUnspecificChange
+            getChangeHooksForSet(target).afterSpecificValueChanged.get(this.value),
+            getChangeHooksForObject(target).unspecificChange
         ];
     }
 
@@ -148,10 +138,10 @@ export class RecordedSetValuesRead extends RecordedReadOnProxiedObjectExt {
         this.values = values;
     }
 
-    getAffectingChangeListenerSets(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["obj"]) {
         return [
-            getWriteListenersForSet(target).afterAnyValueChanged,
-            getWriteListenersForObject(target).afterUnspecificChange
+            getChangeHooksForSet(target).afterAnyValueChanged,
+            getChangeHooksForObject(target).unspecificChange
         ]
     }
 

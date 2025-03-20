@@ -1,37 +1,37 @@
 import {
-    AfterWriteListener, ClassTrackingConfiguration,
+    ChangeListener, EventHook, ClassTrackingConfiguration,
     DualUseTracker, dualUseTracker_callOrigMethodOnTarget,
     ForWatchedProxyHandler, IWatchedProxyHandler_common, makeIteratorTranslateValue,
     ObjKey,
     RecordedRead,
     RecordedReadOnProxiedObject,
-    runAndCallListenersOnce_after
+    runChangeOperation, UnspecificObjectChange
 } from "../common";
-import {getWriteListenersForObject, writeListenersForObject} from "../objectChangeTracking";
-import {arraysAreShallowlyEqual, arraysWithEntriesAreShallowlyEqual, MapSet} from "../Util";
+import {getChangeHooksForObject, changeHooksForObject} from "../objectChangeTracking";
+import {arraysAreShallowlyEqual, arraysWithEntriesAreShallowlyEqual, MapSet, newDefaultMap} from "../Util";
 import {installChangeTracker} from "../origChangeTracking";
 import {WatchedProxyHandler} from "../watchedProxyFacade";
 import {RecordedReadOnProxiedObjectExt} from "../RecordedReadOnProxiedObjectExt";
 
 
 /**
- * Listeners for one map.
+ * Hooks for one map.
  * Note for specificity: There will be only one of the **change** events fired. The Recorded...Read.onChange handler will add the listeners to all possible candidates. It's this way around.
- * {@link ObjectWriteListeners} are also subscribed on Maps
+ * {@link ObjectChangeHooks} are also subscribed on Maps
  */
-class MapWriteListeners {
-    afterSpecificKeyAddedOrRemoved = new MapSet<unknown, AfterWriteListener>();
-    afterAnyKeyAddedOrRemoved = new Set<AfterWriteListener>();
+class MapChangeHooks {
+    specificKeyAddedOrRemoved = newDefaultMap<unknown, EventHook>( () => new EventHook());
+    anyKeyAddedOrRemoved = new EventHook();
 
-    afterSpecificValueChanged = new MapSet<unknown, AfterWriteListener>();
-    afterAnyValueChanged = new Set<AfterWriteListener>();
+    specificValueChanged = newDefaultMap<unknown, EventHook>( () => new EventHook());
+    anyValueChanged = new EventHook();
 }
 
-export const writeListenersForMap = new WeakMap<Map<unknown,unknown>, MapWriteListeners>();
-export function getWriteListenersForMap(map: Map<unknown,unknown>) {
-    let result = writeListenersForMap.get(map);
+export const changeHooksForMap = new WeakMap<Map<unknown,unknown>, MapChangeHooks>();
+export function getChangeHooksForMap(map: Map<unknown,unknown>) {
+    let result = changeHooksForMap.get(map);
     if(result === undefined) {
-        writeListenersForMap.set(map, result = new MapWriteListeners());
+        changeHooksForMap.set(map, result = new MapChangeHooks());
     }
     return result;
 }
@@ -46,11 +46,8 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
         return undefined;
     }
 
-    protected _fireAfterUnspecificWrite() {
-        runAndCallListenersOnce_after(this, (callListeners) => {
-            callListeners(writeListenersForObject.get(this)?.afterUnspecificChange);
-            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
-        });
+    protected _withUnspecificChange<R>(changeFn: () => R): R {
+        return runChangeOperation(this, new UnspecificObjectChange(this), [getChangeHooksForObject(this).unspecificChange], changeFn)
     }
 
     /**
@@ -77,45 +74,36 @@ export class WriteTrackedMap<K,V> extends Map<K,V> implements DualUseTracker<Map
             return this;
         }
 
-        runAndCallListenersOnce_after(this, (callListeners) => {
-            const result = dualUseTracker_callOrigMethodOnTarget(this, "set", [key, value]);
-            if(isNewKey) {
-                callListeners(writeListenersForMap.get(this)?.afterSpecificKeyAddedOrRemoved.get(key));
-                callListeners(writeListenersForMap.get(this)?.afterAnyKeyAddedOrRemoved);
-            }
-
-            if(valueChanged) {
-                callListeners(writeListenersForMap.get(this)?.afterSpecificValueChanged.get(key));
-                callListeners(writeListenersForMap.get(this)?.afterAnyValueChanged);
-            }
-
-            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
+        const hooksForThisMap = getChangeHooksForMap(this);
+        const hooksToServe = [
+            ...(isNewKey?[hooksForThisMap.specificKeyAddedOrRemoved.get(key), hooksForThisMap.anyKeyAddedOrRemoved]:[]),
+            ...(valueChanged?[hooksForThisMap.specificValueChanged.get(key), hooksForThisMap.anyValueChanged]:[])
+        ];
+        runChangeOperation(this, new UnspecificObjectChange(this),hooksToServe,() => {
+            return dualUseTracker_callOrigMethodOnTarget(this, "set", [key, value])
         });
+
         return this;
     }
 
     delete(key: K): boolean {
         key = this._watchedProxyHandler?this._watchedProxyHandler.getFacade().getUnproxiedValue(key):key; // Translate to unproxied key
-        return runAndCallListenersOnce_after(this, (callListeners) => {
-            const result = dualUseTracker_callOrigMethodOnTarget(this, "delete", [key]);
-            if(result) { // deleted?
-                callListeners(writeListenersForMap.get(this)?.afterSpecificKeyAddedOrRemoved.get(key));
-                callListeners(writeListenersForMap.get(this)?.afterAnyKeyAddedOrRemoved);
-                callListeners(writeListenersForMap.get(this)?.afterSpecificValueChanged.get(key));
-                callListeners(writeListenersForMap.get(this)?.afterAnyValueChanged);
-                callListeners(writeListenersForObject.get(this)?.afterAnyChange);
-            }
-            return result;
+
+        if(!this._target.has(key)) { // no change?
+            return false;
+        }
+
+        const hooksForThisMap = getChangeHooksForMap(this);
+        const hooksToServe = [hooksForThisMap.specificKeyAddedOrRemoved.get(key),hooksForThisMap.anyKeyAddedOrRemoved,hooksForThisMap.specificValueChanged.get(key),hooksForThisMap.anyValueChanged];
+        return runChangeOperation(this, new UnspecificObjectChange(this),hooksToServe,() => {
+            return dualUseTracker_callOrigMethodOnTarget(this, "delete", [key]);
         });
     }
 
     clear() {
-        runAndCallListenersOnce_after(this, (callListeners) => {
-            const result = dualUseTracker_callOrigMethodOnTarget(this, "clear", []);
-            callListeners(writeListenersForMap.get(this)?.afterAnyKeyAddedOrRemoved);
-            callListeners(writeListenersForMap.get(this)?.afterAnyValueChanged);
-            callListeners(writeListenersForObject.get(this)?.afterUnspecificChange);
-            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
+        const hooksToServe = [getChangeHooksForMap(this).anyKeyAddedOrRemoved, getChangeHooksForMap(this).anyValueChanged, getChangeHooksForObject(this).unspecificChange];
+        return runChangeOperation(this, new UnspecificObjectChange(this),hooksToServe,() => {
+            return dualUseTracker_callOrigMethodOnTarget(this, "clear", []);
         });
     }
 
@@ -143,11 +131,11 @@ export class RecordedMap_get extends RecordedReadOnProxiedObjectExt {
         return !(this.keyExists === this.obj.has(this.key) && this.value === this.obj.get(this.key));
     }
 
-    getAffectingChangeListenerSets(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["obj"]) {
         return [
-            getWriteListenersForMap(target).afterSpecificKeyAddedOrRemoved.get4use(this.key),
-            getWriteListenersForMap(target).afterSpecificValueChanged.get4use(this.key),
-            getWriteListenersForObject(target).afterUnspecificChange
+            getChangeHooksForMap(target).specificKeyAddedOrRemoved.get(this.key),
+            getChangeHooksForMap(target).specificValueChanged.get(this.key),
+            getChangeHooksForObject(target).unspecificChange
         ]
     }
 
@@ -180,10 +168,10 @@ export class RecordedMap_has extends RecordedReadOnProxiedObjectExt {
         return this.keyExists !== this.obj.has(this.key);
     }
 
-    getAffectingChangeListenerSets(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["obj"]) {
         return [
-            getWriteListenersForMap(target).afterSpecificKeyAddedOrRemoved.get4use(this.key),
-            getWriteListenersForObject(target).afterUnspecificChange,
+            getChangeHooksForMap(target).specificKeyAddedOrRemoved.get(this.key),
+            getChangeHooksForObject(target).unspecificChange,
         ]
     }
 
@@ -206,10 +194,10 @@ export class RecordedMapKeysRead extends RecordedReadOnProxiedObjectExt {
         this.keys = keys;
     }
 
-    getAffectingChangeListenerSets(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["obj"]) {
         return [
-            getWriteListenersForMap(target).afterAnyKeyAddedOrRemoved,
-            getWriteListenersForObject(target).afterUnspecificChange
+            getChangeHooksForMap(target).anyKeyAddedOrRemoved,
+            getChangeHooksForObject(target).unspecificChange
         ]
     }
 
@@ -236,10 +224,10 @@ export class RecordedMapValuesRead extends RecordedReadOnProxiedObjectExt {
         this.values = values;
     }
 
-    getAffectingChangeListenerSets(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["obj"]) {
         return [
-            getWriteListenersForMap(target).afterAnyValueChanged,
-            getWriteListenersForObject(target).afterUnspecificChange
+            getChangeHooksForMap(target).anyValueChanged,
+            getChangeHooksForObject(target).unspecificChange
         ]
     }
 
@@ -267,11 +255,11 @@ export class RecordedMapEntriesRead extends RecordedReadOnProxiedObjectExt {
         this.values = values;
     }
 
-    getAffectingChangeListenerSets(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["obj"]) {
         return [
-            getWriteListenersForMap(target).afterAnyKeyAddedOrRemoved,
-            getWriteListenersForMap(target).afterAnyValueChanged,
-            getWriteListenersForObject(target).afterUnspecificChange
+            getChangeHooksForMap(target).anyKeyAddedOrRemoved,
+            getChangeHooksForMap(target).anyValueChanged,
+            getChangeHooksForObject(target).unspecificChange
         ]
     }
 

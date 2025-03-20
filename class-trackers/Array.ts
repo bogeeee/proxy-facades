@@ -1,14 +1,17 @@
 import {
+    ChangeOperation,
     ClassTrackingConfiguration,
     DualUseTracker,
     ForWatchedProxyHandler, IWatchedProxyHandler_common, makeIteratorTranslateValue,
     ObjKey,
     RecordedRead,
-    RecordedReadOnProxiedObject,
-    runAndCallListenersOnce_after
+    RecordedReadOnProxiedObject, runChangeOperation, UnspecificObjectChange
 } from "../common";
 import {arraysAreShallowlyEqual} from "../Util";
-import {getWriteListenersForObject, writeListenersForObject} from "../objectChangeTracking";
+import {
+    getChangeHooksForObject,
+    changeHooksForObject
+} from "../objectChangeTracking";
 import {installChangeTracker} from "../origChangeTracking";
 import {WatchedProxyHandler} from "../watchedProxyFacade";
 import {RecordedReadOnProxiedObjectExt} from "../RecordedReadOnProxiedObjectExt";
@@ -17,17 +20,17 @@ import {RecordedReadOnProxiedObjectExt} from "../RecordedReadOnProxiedObjectExt"
 /**
  * Listeners for one array.
  * Note for specificity: There will be only one of the **change** events fired. The Recorded...Read.onChange handler will add the listeners to all possible candidates. It's this way around.
- * {@link ObjectWriteListeners} are also subscribed on Arrays
+ * {@link ObjectChangeHooks} are also subscribed on Arrays
  */
-class ArrayWriteListeners {
+class ArrayChangeHooks {
 
 }
 
-export const writeListenersForArray = new WeakMap<unknown[], ArrayWriteListeners>();
-export function getWriteListenersForArray(array: unknown[]) {
-    let result = writeListenersForArray.get(array);
+export const changeHooksForArray = new WeakMap<unknown[], ArrayChangeHooks>();
+export function getChangeHooksForArray(array: unknown[]) {
+    let result = changeHooksForArray.get(array);
     if(result === undefined) {
-        writeListenersForArray.set(array, result = new ArrayWriteListeners());
+        changeHooksForArray.set(array, result = new ArrayChangeHooks());
     }
     return result;
 }
@@ -45,20 +48,14 @@ export class WriteTrackedArray<T> extends Array<T> implements DualUseTracker<Arr
         return undefined;
     }
 
-    protected _fireAfterUnspecificWrite() {
-        runAndCallListenersOnce_after(this, (callListeners) => {
-            callListeners(writeListenersForObject.get(this)?.afterUnspecificChange);
-            callListeners(writeListenersForObject.get(this)?.afterAnyChange);
-        });
+    protected _withUnspecificChange<R>(changeFn: () => R): R {
+        return runChangeOperation(this, new UnspecificObjectChange(this), [getChangeHooksForObject(this).unspecificChange], changeFn)
     }
 
     //push(...items: any[]): number //already calls set
 
     pop(...args: any[]) {
-        //@ts-ignore
-        const result = super.pop(...args);
-        this._fireAfterUnspecificWrite();
-        return result;
+        return  this._withUnspecificChange(() => super.pop())
     }
 
     /**
@@ -76,27 +73,18 @@ export class WriteTrackedArray<T> extends Array<T> implements DualUseTracker<Arr
     }
 
     shift(...args: any[]): T | undefined {
-        //@ts-ignore
-        const result = super.shift(...args);
-        this._fireAfterUnspecificWrite();
-        return result;
+        return  this._withUnspecificChange(() => super.shift())
     }
 
     //@ts-ignore
     sort(...args: any[]): Array<T> {
-        //@ts-ignore
-        const result = super.sort(...args);
-        this._fireAfterUnspecificWrite();
-        return result;
+        return this._withUnspecificChange(()=> super.sort());
     }
 
 
     //@ts-ignore
     fill(...args: any[]): Array<T> {
-        //@ts-ignore
-        const result = super.fill(...args);
-        this._fireAfterUnspecificWrite();
-        return result;
+        return this._withUnspecificChange(() => super.fill(...args as [any, any, any]));
     }
 
 }
@@ -114,11 +102,11 @@ export class RecordedArrayValuesRead extends RecordedReadOnProxiedObjectExt {
         this.values = values;
     }
 
-    getAffectingChangeListenerSets(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["obj"]) {
         return [
-            getWriteListenersForObject(target).afterChangeOwnKeys,
-            getWriteListenersForObject(target).afterChangeAnyProperty,
-            getWriteListenersForObject(target).afterUnspecificChange,
+            getChangeHooksForObject(target).changeOwnKeys,
+            getChangeHooksForObject(target).changeAnyProperty,
+            getChangeHooksForObject(target).unspecificChange,
         ]
     }
 
@@ -187,12 +175,13 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
 
     //@ts-ignore
     shift(...args: any[]) {
-        return runAndCallListenersOnce_after(this, (callListeners) => {
+        if(this.length == 0) {
+            return undefined;
+        }
+
+        return runChangeOperation(this, new UnspecificObjectChange(this), [getChangeHooksForObject(this).changeOwnKeys, getChangeHooksForObject(this).unspecificChange],() => {
             //@ts-ignore
             const result = super.shift(...args);
-            callListeners(getWriteListenersForObject(this)?.afterChangeOwnKeys);
-            callListeners(getWriteListenersForObject(this)?.afterUnspecificChange);
-            callListeners(getWriteListenersForObject(this)?.afterAnyChange);
             this._fireAfterValuesRead();
             return result;
         });
@@ -211,12 +200,13 @@ export class WatchedArray_for_WatchedProxyHandler<T> extends Array<T> implements
 
     //@ts-ignore
     pop(...args: any[]): T | undefined {
-        return runAndCallListenersOnce_after(this, (callListeners) => {
+        if(this.length == 0) {
+            return undefined;
+        }
+
+        return runChangeOperation(this, new UnspecificObjectChange(this),[getChangeHooksForObject(this).changeOwnKeys, getChangeHooksForObject(this).unspecificChange],() => {
             //@ts-ignore
             const result = super.pop(...args);
-            callListeners(getWriteListenersForObject(this)?.afterChangeOwnKeys);
-            callListeners(getWriteListenersForObject(this)?.afterUnspecificChange);
-            callListeners(getWriteListenersForObject(this)?.afterAnyChange);
             this._fireAfterValuesRead();
             return result;
         });

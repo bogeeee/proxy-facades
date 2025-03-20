@@ -1,26 +1,35 @@
-import {AfterWriteListener, RecordedReadOnProxiedObject} from "./common";
+import {ChangeListener, EventHook, RecordedReadOnProxiedObject} from "./common";
 import {installChangeTracker} from "./origChangeTracking";
 import {isProxyForAFacade} from "./proxyFacade";
 
 
 /**
- * Offers a more convenient method: getAffectingChangeListenerSets
+ * Offers a more convenient method: getAffectingChangeHooks
  */
 export abstract class RecordedReadOnProxiedObjectExt extends RecordedReadOnProxiedObject {
 
+    /**
+     * TODO: Rename to onAfterChange
+     * @param listener
+     * @param trackOriginal
+     */
     onChange(listener: () => void, trackOriginal = false) {
-        this.getAffectingChangeListenerSets(this.proxyHandler.proxy).forEach(listenerSet => listenerSet?.add(listener));
+        this.getAffectingChangeHooks(this.proxyHandler.proxy).forEach(eventHook => eventHook.afterListeners.add(listener));
         if (trackOriginal) {
             if(!isProxyForAFacade(this.obj)) {
                 installChangeTracker(this.obj);
             }
-            this.getAffectingChangeListenerSets(this.obj).forEach(listenerSet => listenerSet?.add(listener));
+            this.getAffectingChangeHooks(this.obj).forEach(eventHook => eventHook.afterListeners.add(listener));
         }
     }
 
+    /**
+     * TODO: Rename to offAfterChange
+     * @param listener
+     */
     offChange(listener: () => void) {
-        this.getAffectingChangeListenerSets(this.obj).forEach(listenerSet => listenerSet?.delete(listener));
-        this.getAffectingChangeListenerSets(this.proxyHandler.proxy).forEach(listenerSet => listenerSet?.delete(listener));
+        this.getAffectingChangeHooks(this.obj).forEach(eventHook => eventHook.afterListeners.delete(listener));
+        this.getAffectingChangeHooks(this.proxyHandler.proxy).forEach(eventHook => eventHook.afterListeners.delete(listener));
     }
 
     /**
@@ -28,7 +37,7 @@ export abstract class RecordedReadOnProxiedObjectExt extends RecordedReadOnProxi
      * @param target The target for which... This method might be called for multiple targets from different watchedproxyfacade layers or at last layer for the original unproxied object
      * @returns the sets where to add/remove listeners by the onChange/offChange methods
      */
-    getAffectingChangeListenerSets(target: object): (Set<AfterWriteListener>|undefined)[] {
+    getAffectingChangeHooks(target: object): EventHook[] {
         throw new Error("TODO")
     }
 }

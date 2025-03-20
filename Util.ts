@@ -83,6 +83,35 @@ export class MapSet<K, V> {
 }
 
 /**
+ * This Map does not return empty values, so there's always a default value created
+ */
+export abstract class DefaultMap<K, V> extends Map<K,V>{
+    abstract createDefaultValue(): V;
+
+    get(key: K): V {
+        let result = super.get(key);
+        if(result === undefined) {
+            result = this.createDefaultValue();
+            this.set(key, result);
+        }
+        return result;
+    }
+}
+
+/**
+ *
+ * @param createDefaultValueFn
+ * @returns a Map that creates and inserts a default value when that value does not exist. So the #get method always returns something.
+ */
+export function newDefaultMap<K,V>(createDefaultValueFn: () => V): DefaultMap<K, V> {
+    return new class extends DefaultMap<K, V> {
+       createDefaultValue(): V {
+           return createDefaultValueFn();
+       }
+    }()
+}
+
+/**
  * A WeakMap<K, Set<V>>. But automatically add a new Set if needed
  */
 export class WeakMapSet<K, V> extends MapSet<K, V> {

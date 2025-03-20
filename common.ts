@@ -1,6 +1,7 @@
 import {WatchedProxyHandler} from "./watchedProxyFacade";
-import {arraysAreEqualsByPredicateFn, read, throwError, WeakMapSet} from "./Util";
+import {arraysAreEqualsByPredicateFn, newDefaultMap, read, throwError, WeakMapSet} from "./Util";
 import {getGlobalOrig, ProxyFacade} from "./proxyFacade";
+import {getChangeHooksForObject} from "./objectChangeTracking";
 
 export type ObjKey = string | symbol;
 
@@ -28,7 +29,7 @@ export abstract class RecordedReadOnProxiedObject extends RecordedRead {
 }
 
 export type AfterReadListener = (read: RecordedRead) => void;
-export type AfterWriteListener = () => void;
+
 export type AfterChangeOwnKeysListener = () => void;
 export type Clazz = {
     new(...args: any[]): unknown
@@ -36,6 +37,84 @@ export type Clazz = {
 
 export type GetIteratorValueProxiedFn<T> = (value: T) => T;
 export type IteratorReturningProxiedValue<T> = Iterator<T> & {_getValueProxied: GetIteratorValueProxiedFn<T>}
+
+/**
+ * A change operation that may later be serializable. Beeing able to store it in the transaction protocol of membrace-db. Or to syncronize live objects between server->client
+ */
+export abstract class ChangeOperation {
+
+    /**
+     * Saved inputs as arguments for the do function
+     */
+    inputs?: Parameters<this["_do"]>
+
+    abstract _do(...inputs: unknown[]): {result: unknown, undoInfo: unknown}
+
+    _unDo(undoInfo: ReturnType<this["_do"]>["undoInfo"]): void {
+        throw new Error("Not yet implemented")
+    }
+
+    constructor() {
+        // Check if registered:
+        changeOperationsClasses.has(this.constructor.name) || throwError("Change operation was not registered. Please register the class first, with registerChangeOperationClass(...)");
+    }
+
+    withInputs(...inputs: Parameters<this["_do"]>): this {
+        this.inputs = inputs;
+        return this;
+    }
+
+    do(): ReturnType<this["_do"]>["undoInfo"] {
+        if(this.inputs === undefined) throw new Error("inputs not set");
+
+        return this._do(...this.inputs).result;
+    }
+}
+
+const changeOperationsClasses = new Map<string, typeof ChangeOperation>();
+export function registerChangeOperationClass(clazz: typeof ChangeOperation) {
+    const name = clazz.name as string;
+    name || throwError("Change operation class does not have a name. Is it an anonymous class?")
+    !(changeOperationsClasses.has(name) && changeOperationsClasses.get(name) !== clazz) || throwError("Another change operation class is already registered under the name: " + name);
+    changeOperationsClasses.set(name, clazz);
+}
+
+
+
+export type ChangeListener = (change: ChangeOperation) => void;
+
+/**
+ * Registry for one possible potential target event type. I.e. a property of a certain object, or a more abstract one like: "some key of a certain object has changed".
+ */
+export class EventHook {
+    /**
+     * Called before the change
+     * @param change
+     */
+    beforeListeners =  new Set<ChangeListener>();
+
+    /**
+     * Called after the change
+     * @param change
+     */
+    afterListeners= new Set<ChangeListener>();
+
+    /**
+     * To be able to easily control the before and after for exactly the same change. It's an idea / no good use case found yet.
+     * @param change
+     * @param doChange
+     */
+    //interceptors = new Set<(change: RecordedChange, doChange: () => void) => void>();
+
+    fireBefore(change: ChangeOperation) {
+        this.beforeListeners.forEach(l => l(change));
+    }
+
+    fireAfter(change: ChangeOperation) {
+        this.afterListeners.forEach(l => l(change));
+    }
+}
+
 
 /**
  * For use in proxy and direct
@@ -86,43 +165,74 @@ export type SetterFlags = {
 const runAndCallListenersOnce_after_listeners = new Map<object, Set<() => void>>();
 
 /**
- * Prevents listeners from beeing called twice. Even during the same operation that spans a call stack (the stack can go through multiple proxy layers)
- * Runs the collectorFn, which can add listeners to the listenersSet. These are then fired *after* collectorFn has run.
- * If this function gets called nested (for the same target) / "spans a call stack", then only after the outermost call will *all* deep collected listeners be fired.
+ * Used by runChangeOperation
+ */
+class ChangeCall {
+    fired_beforeListeners = new Set<ChangeListener>();
+    afterListeners = new Set<ChangeListener>();
+
+    /**
+     * "binds" the ChangeOperation parameter to the afterListeners
+     */
+    paramsForAfterListeners = new Map<ChangeListener, ChangeOperation>();
+}
+
+const runChangeOperation_Calls = newDefaultMap<object, ChangeCall>(()=> new ChangeCall());
+
+/**
+ * Informs hooksToServe's beforeListeners + executes changeOperation + informs hooksToServe's afterListeners.
+ * While it prevents listeners from beeing called twice. Even during the same operation (call) that spans a call stack (the stack can go through multiple proxy layers)
  * <p>
  *     This function is needed, because there's some overlapping of concerns in listener types, especially for Arrays. Also internal methods may again call the set method which itsself wants to call the propertychange_listeners.
  * </p>
- * @param collectorFn
  */
-export function runAndCallListenersOnce_after<R>(forTarget: object, collectorFn: (callListeners: (listeners?: (() => void)[] | Set<() => void>) => void) => R) {
-    forTarget = getGlobalOrig(forTarget);
-    let listenerSet = runAndCallListenersOnce_after_listeners.get(forTarget);
-    let isRoot = false; // is it not nested / the outermost call ?
-    if(listenerSet === undefined) {
-        isRoot = true;
-        runAndCallListenersOnce_after_listeners.set(forTarget, listenerSet = new Set()); // Create and register listener set
-    }
-
+export function runChangeOperation<R>(forTarget: object, changeOperation: ChangeOperation, hooksToServe: EventHook[], changeFn: () => R) : R {
+    const synchronizeOn = getGlobalOrig(forTarget);
+    let isRootCall = !runChangeOperation_Calls.has(synchronizeOn); // is it not nested / the outermost call ?
+    const changeCall = runChangeOperation_Calls.get(synchronizeOn);
     try {
-        const result = collectorFn((listeners) => {listeners?.forEach(l => listenerSet?.add(l))});
+        hooksToServe.push(getChangeHooksForObject(forTarget).anyChange); // Always serve this one as well
+        objectMembershipInGraphs.get(forTarget)?.forEach(graph => {
+            hooksToServe.push(graph._changeHook);
+        })
 
-        if(isRoot) {
-            // call listeners:
-            for (const listener of listenerSet.values()) {
-                listener();
+        // Fire and register before-hooks:
+        hooksToServe.forEach(hook => {
+            hook.beforeListeners.forEach(listener => {
+                if(!changeCall.fired_beforeListeners.has(listener)) {
+                    listener(changeOperation); // fire
+                    changeCall.fired_beforeListeners.add(listener);
+                }
+            })
+
+            hook.afterListeners.forEach(afterListener => {
+                if(!changeCall.afterListeners.has(afterListener)) {
+                    changeCall.afterListeners.add(afterListener);
+                    changeCall.paramsForAfterListeners.set(afterListener, changeOperation); // Ensure, it is called with the proper changeOperation parameter afterwards. Otherwise stuff from a higher level facade would leak to a change listeners, registered in a lower facade
+                }
+            }); // schedule afterListeners
+        });
+
+        const result = changeFn();
+
+        if(isRootCall) {
+            // call afterListeners:
+            for (const listener of changeCall.afterListeners) {
+                listener(changeCall.paramsForAfterListeners.get(listener)!); // fire
             }
         }
 
         return result;
     }
     finally {
-        if (isRoot) {
-            runAndCallListenersOnce_after_listeners.delete(forTarget);
+        if (isRootCall) {
+            runChangeOperation_Calls.delete(synchronizeOn);
         }
     }
 }
-let esRuntimeBehaviourAlreadyChecked = false;
 
+
+let esRuntimeBehaviourAlreadyChecked = false;
 export function checkEsRuntimeBehaviour() {
     if(esRuntimeBehaviourAlreadyChecked) {
         return;
@@ -300,10 +410,13 @@ export function makeIteratorTranslateValue<V, IT extends Iterator<V>>(iterator: 
 }
 
 
-
+/**
+ * Base for ProxyFacades and change-tracking of original objects (without proxy facades) See {@see changeTrackedOriginaObjects the changeTrackedOriginaObjects global instance}
+ */
 export class PartialGraph {
     /**
-     * True means, it spreads it's self when members are read or set. Not yet implemented for non-proxy-facades
+     * True means, it spreads it's self when members are read or set. Not yet implemented for non-proxy-facades.
+     * Always true for proxy-facade subclasses (that's their job).
      */
     viral = false;
 
@@ -312,22 +425,39 @@ export class PartialGraph {
      * Note: There are also listeners for specified properties/situations (which are more capable)
      * @protected
      */
-    _afterChangeListeners = new Set<AfterWriteListener>()
+    _changeHook = new EventHook()
 
+    /**
+     *
+     * @param listener Called when a change is made to any object inside this graph.
+     * The listener is called when the change is not yet written unlike {@see onAfterChange}. So throwing an exception in the listener will prevent the actual change from happening.
+     */
+    onBeforeChange(listener: ChangeListener) {
+        this._changeHook.beforeListeners.add(listener);
+    }
+
+    /**
+     * Unregister listener from {@see PartialGraph#onBeforeChange}
+     * @param listener
+     */
+    offBeforeChange(listener: ChangeListener) {
+        this._changeHook.beforeListeners.delete(listener);
+    }
+    
     /**
      *
      * @param listener Called after a change has been made to any object inside this graph
      */
-    onAfterChange(listener: AfterWriteListener) {
-        this._afterChangeListeners.add(listener);
+    onAfterChange(listener: ChangeListener) {
+        this._changeHook.afterListeners.add(listener);
     }
 
     /**
      * Unregister listener from {@see PartialGraph#onAfterChange}
      * @param listener
      */
-    offAfterChange(listener: AfterWriteListener) {
-        this._afterChangeListeners.delete(listener);
+    offAfterChange(listener: ChangeListener) {
+        this._changeHook.afterListeners.delete(listener);
     }
 
     hasObj(obj: object) {
@@ -340,3 +470,26 @@ export class PartialGraph {
 }
 
 export const objectMembershipInGraphs = new WeakMapSet<object, PartialGraph>();
+
+/**
+ * TODO: Implement subclasses
+ */
+export class UnspecificObjectChange extends ChangeOperation {
+    constructor(target?: object) {
+        super();
+        if (target !== undefined) {
+            //@ts-ignore
+            this.inputs = [target, /* state of target AFTER the opertation*/];
+        }
+    }
+
+    _do(...inputs: unknown[]) {
+        // TODO: restore state after
+        return {result: undefined, undoInfo: undefined};
+    }
+
+    _unDo(undoInfo: ReturnType<this["_do"]>["undoInfo"]): void {
+        throw new Error("Not yet implemented");
+    }
+}
+registerChangeOperationClass(UnspecificObjectChange);

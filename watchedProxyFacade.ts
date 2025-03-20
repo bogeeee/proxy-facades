@@ -3,16 +3,16 @@ import {throwError} from "./Util";
 import {
     AfterChangeOwnKeysListener,
     AfterReadListener,
-    AfterWriteListener,
-    checkEsRuntimeBehaviour,
+    ChangeListener,
+    checkEsRuntimeBehaviour, EventHook,
     getPropertyDescriptor,
     IWatchedProxyHandler_common, objectMembershipInGraphs,
     ObjKey,
     RecordedRead,
     RecordedReadOnProxiedObject,
-    runAndCallListenersOnce_after,
+    runChangeOperation, UnspecificObjectChange,
 } from "./common";
-import {getWriteListenersForObject, writeListenersForObject} from "./objectChangeTracking";
+import {getChangeHooksForObject, changeHooksForObject} from "./objectChangeTracking";
 import _ from "underscore"
 import {getTrackingConfigFor} from "./class-trackers/index";
 import {RecordedReadOnProxiedObjectExt} from "./RecordedReadOnProxiedObjectExt";
@@ -66,12 +66,12 @@ export class RecordedPropertyRead extends RecordedReadOnProxiedObjectExt {
         return this.obj[this.key] !== this.value;
     }
 
-    getAffectingChangeListenerSets(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["obj"]) {
         const result = [
-            getWriteListenersForObject(target).afterChangeSpecificProperty.get4use(this.key)
+            getChangeHooksForObject(target).changeSpecificProperty.get(this.key)
         ]
         if(Array.isArray(this.obj)) {
-            result.push(getWriteListenersForObject(target).afterUnspecificChange);
+            result.push(getChangeHooksForObject(target).unspecificChange);
         }
         return result;
     }
@@ -97,12 +97,12 @@ export class RecordedOwnKeysRead extends RecordedReadOnProxiedObjectExt{
         return !_.isEqual(Reflect.ownKeys(this.obj), this.value);
     }
 
-    getAffectingChangeListenerSets(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["obj"]) {
         const result = [
-            getWriteListenersForObject(target).afterChangeOwnKeys
+            getChangeHooksForObject(target).changeOwnKeys
         ]
         if(Array.isArray(this.obj)) {
-            result.push(getWriteListenersForObject(target).afterUnspecificChange);
+            result.push(getChangeHooksForObject(target).unspecificChange);
         }
         return result;
     }
@@ -124,9 +124,9 @@ export class RecordedUnspecificRead extends RecordedReadOnProxiedObjectExt{
         return true;
     }
 
-    getAffectingChangeListenerSets(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["obj"]) {
         return [
-            getWriteListenersForObject(target).afterAnyChange
+            getChangeHooksForObject(target).anyChange
         ]
     }
 
@@ -174,8 +174,8 @@ export class WatchedProxyFacade extends ProxyFacade<WatchedProxyHandler> {
      * @param key Not restricted here (for the tests), but it must not be number !
      * @param listener
      */
-    onAfterWriteOnProperty<O extends  object, K extends keyof O>(obj: O, key: K, listener:  AfterWriteListener) {
-        getWriteListenersForObject(obj).afterChangeSpecificProperty.add(key as ObjKey, listener);
+    onAfterWriteOnProperty<O extends  object, K extends keyof O>(obj: O, key: K, listener:  ChangeListener) {
+        getChangeHooksForObject(obj).changeSpecificProperty.get(key as ObjKey).afterListeners.add(listener);
     }
 
     /**
@@ -184,8 +184,8 @@ export class WatchedProxyFacade extends ProxyFacade<WatchedProxyHandler> {
      * @param key Not restricted here (for the tests), but it must not be number !
      * @param listener
      */
-    offAfterWriteOnProperty<O extends  object, K extends keyof O>(obj: O, key: K, listener:  AfterWriteListener) {
-        writeListenersForObject.get(obj)?.afterChangeSpecificProperty.add(key as ObjKey, listener);
+    offAfterWriteOnProperty<O extends  object, K extends keyof O>(obj: O, key: K, listener:  ChangeListener) {
+        changeHooksForObject.get(obj)?.changeSpecificProperty.get(key as ObjKey).afterListeners.delete(listener);
     }
 
     protected crateHandler(target: object, facade: any): WatchedProxyHandler {
@@ -278,14 +278,12 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
             return thisHandler.trackingConfig?.proxyUnhandledMethodResults?thisHandler.facade.getProxyFor(callResult):callResult;
         }
         /**
-         * Fires a RecordedUnspecificRead and calls the afterUnspecificChange listeners
+         * Fires a RecordedUnspecificRead and calls the unspecificChange listeners
          * @param args
          */
         function trapForGenericReaderWriterMethod(this:object, ...args: unknown[]) {
-            return runAndCallListenersOnce_after(proxy, (callListeners) => {
+            return runChangeOperation(proxy, new UnspecificObjectChange(proxy),[getChangeHooksForObject(proxy).unspecificChange],() => {
                 const callResult = origMethod!.apply(receiverMustBeNonProxied?target:this, args); // call original method:
-                callListeners(writeListenersForObject.get(proxy)?.afterUnspecificChange); // Call listeners
-                callListeners(writeListenersForObject.get(proxy)?.afterAnyChange); // Call listeners
                 if(thisHandler.trackingConfig?.trackTreads !== false) { // not explicitly disabled ?
                     thisHandler.fireAfterRead(new RecordedUnspecificRead());
                 }
@@ -297,7 +295,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
          * @param args
          */
         function trapHighLevelReaderWriterMethod(this:object, ...args: unknown[]) {
-            return runAndCallListenersOnce_after(proxy, (callListeners) => {
+            return runChangeOperation(proxy, new UnspecificObjectChange(proxy),[],() => {
                 return origMethod!.apply(this, args);  // call original method
             });
         }
@@ -317,36 +315,35 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
     }
 
     protected rawChange(key: string | symbol, newUnproxiedValue: any) {
-        runAndCallListenersOnce_after(this.proxy, (callListeners) => {
-            const isNewProperty = getPropertyDescriptor(this.target, key) === undefined;
-            super.rawChange(key, newUnproxiedValue);
-            if(this.isForArray()) {
-                callListeners(writeListenersForObject.get(this.proxy)?.afterUnspecificChange);
-            }
-            const writeListeners = writeListenersForObject.get(this.proxy);
-            callListeners(writeListeners?.afterChangeSpecificProperty.get(key));
-            callListeners(writeListeners?.afterChangeAnyProperty);
-            if (isNewProperty) {
-                callListeners(writeListeners?.afterChangeOwnKeys);
-            }
-            callListeners(writeListeners?.afterAnyChange);
-            objectMembershipInGraphs.get(this.proxy)?.forEach(graph => callListeners(graph._afterChangeListeners));
-        });
+        const changeHooksForThisObject = getChangeHooksForObject(this.proxy);
+        const hooksToServe: EventHook[] = [];
 
+        if (this.isForArray()) {
+            hooksToServe.push(changeHooksForThisObject.unspecificChange);
+        }
+
+        hooksToServe.push(changeHooksForThisObject.changeSpecificProperty.get(key));
+        hooksToServe.push(changeHooksForThisObject.changeAnyProperty);
+
+        const isNewProperty = getPropertyDescriptor(this.target, key) === undefined;
+        if (isNewProperty) {
+            hooksToServe.push(changeHooksForThisObject.changeOwnKeys);
+        }
+
+        runChangeOperation(this.proxy, new UnspecificObjectChange(this.proxy),hooksToServe,() => {
+            super.rawChange(key, newUnproxiedValue);
+        });
     }
 
     deleteProperty(target: object, key: string | symbol): boolean {
-        return runAndCallListenersOnce_after(this.proxy, (callListeners) => {
-            const doesExists = Object.getOwnPropertyDescriptor(this.target, key) !== undefined;
-            if (doesExists) {
-                this.set(target, key, undefined, this.proxy); // Set to undefined first, so property change listeners will get informed
-            }
-            const result = super.deleteProperty(target, key);
-            if (doesExists) {
-                callListeners(writeListenersForObject.get(this.proxy)?.afterChangeOwnKeys);
-                callListeners(writeListenersForObject.get(this.proxy)?.afterAnyChange);
-            }
-            return result;
+        const doesExists = Object.getOwnPropertyDescriptor(this.target, key) !== undefined;
+        if (!doesExists) {
+            return true;
+        }
+
+        return runChangeOperation(this.proxy, new UnspecificObjectChange(this.proxy),[getChangeHooksForObject(this.proxy).changeOwnKeys],() => {
+            this.set(target, key, undefined, this.proxy); // Set to undefined first, so property change listeners will get informed
+            return super.deleteProperty(target, key);
         });
     }
 

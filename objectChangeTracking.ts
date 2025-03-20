@@ -1,50 +1,53 @@
 /**
  * Listeners for one object
  */
-import {MapSet} from "./Util";
+import {newDefaultMap} from "./Util";
 import {
-    AfterChangeOwnKeysListener,
-    AfterWriteListener, ClassTrackingConfiguration,
+    ClassTrackingConfiguration,
+    EventHook,
     getPropertyDescriptor,
     GetterFlags,
     ObjKey,
-    runAndCallListenersOnce_after,
+    runChangeOperation,
     SetterFlags,
+    UnspecificObjectChange,
 } from "./common";
-import {getTrackingConfigFor} from "./class-trackers/index";
 
 /**
+ * Contains change listeners for one specific object.
  * Note for specificity: There will be only one of the **change** events fired. The Recorded...Read.onChange handler will add the listeners to all possible candidates. It's this way around.
  * Does not apply to setterInvoke.. These are fired in addition (not thought through for all situations)
  */
-class ObjectWriteListeners {
+class ObjectChangeHooks {
     /**
      * For writes on **setters** (also if these are the same/unchanged values)
      */
-    afterSetterInvoke = new MapSet<ObjKey, AfterWriteListener>();
-    afterChangeSpecificProperty = new MapSet<ObjKey, AfterWriteListener>();
-    afterChangeAnyProperty = new Set<AfterWriteListener>();
+    setterInvoke = newDefaultMap<ObjKey, EventHook>( () => new EventHook());
+    changeSpecificProperty = newDefaultMap<ObjKey, EventHook>( () => new EventHook());
+    changeAnyProperty = new EventHook();
 
     /**
-     * Means, the result of Object.keys will be different after the change. All iterations over the object/arrays's keys or values are informed that there was a change. Individual {@link afterChangeSpecificProperty} are not affected!
+     * Means, the result of Object.keys will be different after the change. All iterations over the object/arrays's keys or values are informed that there was a change. Individual {@link changeSpecificProperty} are not affected!
      */
-    afterChangeOwnKeys = new Set<AfterChangeOwnKeysListener>();
+    changeOwnKeys = new EventHook();
     /**
      * These will always be called, no matter how specific a change is
      */
-    afterAnyChange = new Set<()=>void>();
+    anyChange = new EventHook();
 
     /**
      *
      */
-    afterUnspecificChange = new Set<AfterWriteListener>();
+    unspecificChange = new EventHook();
 }
 
-export const writeListenersForObject = new WeakMap<object, ObjectWriteListeners>();
-export function getWriteListenersForObject(obj: object) {
-    let result = writeListenersForObject.get(obj);
+
+
+export const changeHooksForObject = new WeakMap<object, ObjectChangeHooks>();
+export function getChangeHooksForObject(obj: object) {
+    let result = changeHooksForObject.get(obj);
     if(result === undefined) {
-        writeListenersForObject.set(obj, result = new ObjectWriteListeners());
+        changeHooksForObject.set(obj, result = new ObjectChangeHooks());
     }
     return result;
 }
@@ -92,35 +95,35 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
         }
 
         const newSetter=  (newValue: any) => {
-            runAndCallListenersOnce_after(target, (callListeners) => {
-                const writeListenersForTarget = writeListenersForObject.get(target);
+            const changeHooksForTarget = getChangeHooksForObject(target);
 
-                if(origSetter !== undefined) {
+            if(origSetter !== undefined) {
+                runChangeOperation(target, new UnspecificObjectChange(target),[changeHooksForTarget.setterInvoke.get(key)],() => {
                     origSetter.apply(target, [newValue]);  // call the setter
-                    callListeners(writeListenersForTarget?.afterSetterInvoke.get(key));
-                    callListeners(writeListenersForTarget?.afterAnyChange);
-                    return;
-                }
+                });
+                return;
+            }
 
-                if(origGetter !== undefined) {
-                    currentValue = origGetter.apply(target);  // call the getter. Is this a good idea to refresh the value here?
-                    throw new TypeError("Target originally had a getter and no setter but the property is set.");
-                }
+            if(origGetter !== undefined) {
+                currentValue = origGetter.apply(target);  // call the getter. Is this a good idea to refresh the value here?
+                throw new TypeError("Target originally had a getter and no setter but the property is set.");
+            }
 
-                //@ts-ignore
-                if (newValue !== currentValue) { // modify ?
+            //@ts-ignore
+            if (newValue !== currentValue) { // modify ?
+                // run change operation and call listeners:
+                const hooksToServe: EventHook[] = [];
+                if(Array.isArray(target)) {
+                    hooksToServe.push(changeHooksForTarget.unspecificChange);
+                }
+                hooksToServe.push(changeHooksForTarget.changeSpecificProperty.get(key))
+                hooksToServe.push(changeHooksForTarget.changeAnyProperty)
+                runChangeOperation(target, new UnspecificObjectChange(target),hooksToServe,() => {
                     //@ts-ignore
                     currentValue = newValue;
+                });
+            }
 
-                    // Call listeners:
-                    if(Array.isArray(target)) {
-                        callListeners(writeListenersForObject.get(target)?.afterUnspecificChange);
-                    }
-                    callListeners(writeListenersForTarget?.afterChangeSpecificProperty.get(key))
-                    callListeners(writeListenersForTarget?.afterChangeAnyProperty)
-                    callListeners(writeListenersForTarget?.afterAnyChange)
-                }
-            });
         }
         (newSetter as SetterFlags).origHadSetter = origSetter !== undefined;
 
@@ -140,11 +143,8 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
         })
     }
 
-    fire_array_afterUnspecificWrite() {
-        return runAndCallListenersOnce_after(this.target, (callListeners) => {
-            callListeners(writeListenersForObject.get(this.target as Array<unknown>)?.afterUnspecificChange);
-            callListeners(writeListenersForObject.get(this.target as Array<unknown>)?.afterAnyChange);
-        });
+    protected withUnspecificChange<R>(changeFn: () => R): R {
+        return runChangeOperation(this.target, new UnspecificObjectChange(this.target), [getChangeHooksForObject(this.target).unspecificChange], changeFn)
     }
 
     get(fake_target:object, key: ObjKey, receiver:any): any {
@@ -196,18 +196,15 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
 
         var origMethod: ((this:unknown, ...args:unknown[]) => unknown) | undefined = undefined;
        /**
-         * Calls the afterUnspecificChange listeners
+         * Calls the unspecificChange listeners
          * @param args
          */
         function trapForGenericWriterMethod(this:object, ...args: unknown[]) {
             if(this !== receiver) {
                 //throw new Error("Invalid state. Method was called on invalid target")
             }
-            return runAndCallListenersOnce_after(target, (callListeners) => {
-                const callResult = origMethod!.apply(this, args);  // call original method
-                callListeners(writeListenersForObject.get(target as Array<unknown>)?.afterUnspecificChange); // Call listeners
-                callListeners(writeListenersForObject.get(target as Array<unknown>)?.afterAnyChange); // Call listeners
-                return callResult;
+           return runChangeOperation(target, new UnspecificObjectChange(target),[getChangeHooksForObject(target as Array<unknown>).unspecificChange],() => {
+                return origMethod!.apply(this, args);  // call original method
             });
         }
 
@@ -219,7 +216,7 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
             if(this !== receiver) {
                 //throw new Error("Invalid state. Method was called on invalid target")
             }
-            return runAndCallListenersOnce_after(target, (callListeners) => {
+            return runChangeOperation(target, new UnspecificObjectChange(target),[],() => {
                 return origMethod!.apply(this, args);  // call original method
             });
         }
@@ -231,17 +228,13 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
             throw new Error("Invalid state. Set was called on a different object than this write-tracker-proxy (which is set as the prototype) is for. Did you clone the object, resulting in shared prototypes?")
         }
 
-        runAndCallListenersOnce_after(this.target, (callListeners) => {
+        runChangeOperation(this.target, new UnspecificObjectChange(this.target),[getChangeHooksForObject(this.target).changeOwnKeys],() => { // There was no setter trap yet. This means that the key is new. Inform those listeners:
 
             // if this "set" method got called, there is no setter trap installed yet
             this.installSetterTrap(key);
 
             //@ts-ignore
             this.target[key] = value; // Set value again. this should call the setter trap
-
-            // There was no setter trap yet. This means that the key is new. Inform those listeners:
-            callListeners(writeListenersForObject.get(this.target)?.afterChangeOwnKeys);
-            callListeners(writeListenersForObject.get(this.target)?.afterAnyChange);
         });
 
         return true;
