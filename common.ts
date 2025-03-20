@@ -181,39 +181,45 @@ const runChangeOperation_Calls = newDefaultMap<object, ChangeCall>(()=> new Chan
 
 /**
  * Informs hooksToServe's beforeListeners + executes changeOperation + informs hooksToServe's afterListeners.
- * While it prevents listeners from beeing called twice. Even during the same operation (call) that spans a call stack (the stack can go through multiple proxy layers)
+ * All this while preventing listeners from beeing called twice (this is the main purpose of this function!). Even during the same operation (call) that spans a call stack (the stack can go through multiple proxy layers)
  * <p>
  *     This function is needed, because there's some overlapping of concerns in listener types, especially for Arrays. Also internal methods may again call the set method which itsself wants to call the propertychange_listeners.
  * </p>
+ * @param forTarget object to sync on. All hooks passed to nested runChangeOperation calls will only be fired once.
+ * @param paramForListeners the parameter for the change listeners. It won't be run by this function / it's just the parameter. When setting to undefined, it indicates that this runChangeOperation call is only to wrap multiple nested calls / sync them on targetObject. The default anyChange hook won't be called at this level either.
+ * @param hooksToServe these hooks will be called (not twice, as mentioned).
+ * @param changeOperationFn
  */
-export function runChangeOperation<R>(forTarget: object, changeOperation: ChangeOperation, hooksToServe: EventHook[], changeFn: () => R) : R {
+export function runChangeOperation<R>(forTarget: object, paramForListeners: ChangeOperation | undefined, hooksToServe: EventHook[], changeOperationFn: () => R) : R {
     const synchronizeOn = getGlobalOrig(forTarget);
     let isRootCall = !runChangeOperation_Calls.has(synchronizeOn); // is it not nested / the outermost call ?
     const changeCall = runChangeOperation_Calls.get(synchronizeOn);
     try {
-        hooksToServe.push(getChangeHooksForObject(forTarget).anyChange); // Always serve this one as well
-        objectMembershipInGraphs.get(forTarget)?.forEach(graph => {
-            hooksToServe.push(graph._changeHook);
-        })
-
-        // Fire and register before-hooks:
-        hooksToServe.forEach(hook => {
-            hook.beforeListeners.forEach(listener => {
-                if(!changeCall.fired_beforeListeners.has(listener)) {
-                    listener(changeOperation); // fire
-                    changeCall.fired_beforeListeners.add(listener);
-                }
+        if(paramForListeners) {
+            hooksToServe.push(getChangeHooksForObject(forTarget).anyChange); // Always serve this one as well
+            objectMembershipInGraphs.get(forTarget)?.forEach(graph => {
+                hooksToServe.push(graph._changeHook);
             })
 
-            hook.afterListeners.forEach(afterListener => {
-                if(!changeCall.afterListeners.has(afterListener)) {
-                    changeCall.afterListeners.add(afterListener);
-                    changeCall.paramsForAfterListeners.set(afterListener, changeOperation); // Ensure, it is called with the proper changeOperation parameter afterwards. Otherwise stuff from a higher level facade would leak to a change listeners, registered in a lower facade
-                }
-            }); // schedule afterListeners
-        });
+            // Fire and register before-hooks:
+            hooksToServe.forEach(hook => {
+                hook.beforeListeners.forEach(listener => {
+                    if (!changeCall.fired_beforeListeners.has(listener)) {
+                        listener(paramForListeners); // fire
+                        changeCall.fired_beforeListeners.add(listener);
+                    }
+                })
 
-        const result = changeFn();
+                hook.afterListeners.forEach(afterListener => {
+                    if (!changeCall.afterListeners.has(afterListener)) {
+                        changeCall.afterListeners.add(afterListener);
+                        changeCall.paramsForAfterListeners.set(afterListener, paramForListeners); // Ensure, it is called with the proper changeOperation parameter afterwards. Otherwise stuff from a higher level facade would leak to a change listeners, registered in a lower facade
+                    }
+                }); // schedule afterListeners
+            });
+        }
+
+        const result = changeOperationFn();
 
         if(isRootCall) {
             // call afterListeners:

@@ -216,7 +216,7 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
             if(this !== receiver) {
                 //throw new Error("Invalid state. Method was called on invalid target")
             }
-            return runChangeOperation(target, new UnspecificObjectChange(target),[],() => {
+            return runChangeOperation(target, undefined,[],() => {
                 return origMethod!.apply(this, args);  // call original method
             });
         }

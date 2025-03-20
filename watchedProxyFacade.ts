@@ -295,7 +295,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
          * @param args
          */
         function trapHighLevelReaderWriterMethod(this:object, ...args: unknown[]) {
-            return runChangeOperation(proxy, new UnspecificObjectChange(proxy),[],() => {
+            return runChangeOperation(proxy, undefined,[],() => {
                 return origMethod!.apply(this, args);  // call original method
             });
         }
