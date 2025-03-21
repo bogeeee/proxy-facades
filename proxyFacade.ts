@@ -17,7 +17,7 @@ import {getChangeHooksForObject} from "./objectChangeTracking";
 import {newDefaultMap} from "./Util";
 import {WatchedProxyHandler} from "./watchedProxyFacade";
 
-
+let idGenerator=0;
 export abstract class ProxyFacade<HANDLER extends FacadeProxyHandler<any>> extends PartialGraph {
     // *** Configuration: ***
     /**
@@ -27,6 +27,8 @@ export abstract class ProxyFacade<HANDLER extends FacadeProxyHandler<any>> exten
 
     // *** State: ***
     protected objectsToProxyHandlers = new WeakMap<object, HANDLER>();
+
+    debug_id = ++idGenerator;
 
     protected abstract crateHandler(target: object, facade: any): HANDLER;
 
