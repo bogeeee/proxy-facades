@@ -595,6 +595,17 @@ describe('WatchedProxyFacade tests', () => {
         expect([...proxy][4][0] === keyE).toBeFalsy();
 
     })
+
+    test("It should not unwrap values of another proxyfacade",() => {
+        const orig= {};
+        const facadeA = new WatchedProxyFacade();
+        const proxyA = facadeA.getProxyFor(orig);
+        const facadeB = new WatchedProxyFacade();
+        const someObjOrig = {} as any;
+        const someObjProxyB = facadeB.getProxyFor(someObjOrig);
+        someObjProxyB.value = proxyA; // Should not unwrap proxyA and store orig
+        expect(someObjOrig.value === proxyA).toBeTruthy();
+    })
 });
 
 
