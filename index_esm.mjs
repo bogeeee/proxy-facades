@@ -2,13 +2,11 @@
 
 import cjsCommon from "./common.js"
 export const RecordedRead = cjsCommon.RecordedRead;
-export const RecordedReadOnProxiedObject = cjsCommon.RecordedReadOnProxiedObject;
 export const ClassTrackingConfiguration = cjsCommon.ClassTrackingConfiguration;
-export const dualUseTracker_callOrigMethodOnTarget = cjsCommon.dualUseTracker_callOrigMethodOnTarget;
 export const IteratorReturningProxiedValue = cjsCommon.IteratorReturningProxiedValue;
 export const GetIteratorValueProxiedFn = cjsCommon.GetIteratorValueProxiedFn;
-export const DualUseTracker = cjsCommon.DualUseTracker;
-export const ForWatchedProxyHandler = cjsCommon.ForWatchedProxyHandler
+
+
 
 import cjsProxyFacade from "./proxyFacade.js"
 export const ProxyFacade = cjsProxyFacade.ProxyFacade;
@@ -17,6 +15,10 @@ export const invalidateObject = cjsProxyFacade.invalidateObject;
 export const getGlobalOrig = cjsProxyFacade.getGlobalOrig;
 export const deleteProperty = cjsProxyFacade.deleteProperty;
 export const changeTrackedOrigObjects = cjsProxyFacade.changeTrackedOrigObjects;
+export const ForWatchedProxyHandler = cjsProxyFacade.ForWatchedProxyHandler
+export const dualUseTracker_callOrigMethodOnTarget = cjsProxyFacade.dualUseTracker_callOrigMethodOnTarget;
+export const DualUseTracker = cjsProxyFacade.DualUseTracker;
+export const RecordedReadOnProxiedObject = cjsProxyFacade.RecordedReadOnProxiedObject;
 
 import cjsOrigChangeTracking from "./origChangeTracking.js"
 export const installChangeTracker = cjsOrigChangeTracking.installChangeTracker;
