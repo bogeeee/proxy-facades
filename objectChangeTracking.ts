@@ -8,10 +8,10 @@ import {
     getPropertyDescriptor,
     GetterFlags,
     ObjKey,
-    runChangeOperation,
     SetterFlags,
     UnspecificObjectChange,
 } from "./common";
+import {runChangeOperation} from "./proxyFacade";
 
 /**
  * Contains change listeners for one specific object.

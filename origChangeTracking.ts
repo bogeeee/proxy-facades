@@ -2,14 +2,14 @@
 // unproxied=not part of a proxy facade. Technically this can install Proxys as the prototype, to catch writes.
 
 
-import {PartialGraph, runChangeOperation, UnspecificObjectChange} from "./common";
+import {PartialGraph, UnspecificObjectChange} from "./common";
 import {
     ObjectProxyHandler,
     changeHooksForObject,
     getChangeHooksForObject
 } from "./objectChangeTracking";
 import {getTrackingConfigFor} from "./class-trackers/index";
-import {isProxyForAFacade} from "./proxyFacade";
+import {isProxyForAFacade, runChangeOperation} from "./proxyFacade";
 import {throwError} from "./Util";
 
 export const changeTrackedOrigObjects = new PartialGraph();

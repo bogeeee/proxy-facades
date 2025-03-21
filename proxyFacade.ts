@@ -2,14 +2,21 @@
  *
  */
 import {
+    ChangeListener,
+    ChangeOperation,
+    EventHook,
     getPropertyDescriptor,
     GetterFlags,
     objectMembershipInGraphs,
     ObjKey,
     PartialGraph,
+    RecordedRead,
     SetterFlags
 } from "./common";
 import {deleteProperty} from "./origChangeTracking";
+import {getChangeHooksForObject} from "./objectChangeTracking";
+import {newDefaultMap} from "./Util";
+import {WatchedProxyHandler} from "./watchedProxyFacade";
 
 
 export abstract class ProxyFacade<HANDLER extends FacadeProxyHandler<any>> extends PartialGraph {
@@ -219,4 +226,129 @@ export function getGlobalOrig<T extends object>(obj: T): T {
         obj = handler.target as T;
     }
     return obj;
+}
+
+export abstract class RecordedReadOnProxiedObject extends RecordedRead {
+    proxyHandler!: WatchedProxyHandler
+    /**
+     * A bit redundant with proxyhandler. But for performance reasons, we leave it
+     */
+    obj!: object;
+}
+
+export interface IWatchedProxyHandler_common {
+    /**
+     * Registers the Read to this WatchedProxyHandler and fires it on the WatchedFacade (informs WatchedFacade's listeners)
+     * @param read
+     */
+    fireAfterRead(read: RecordedReadOnProxiedObject): void;
+
+    getFacade(): ProxyFacade<any>
+}
+
+/**
+ * For use in proxy and direct
+ */
+export interface DualUseTracker<T> {
+
+    /**
+     * Will return the handler when called through the handler
+     */
+    get _watchedProxyHandler(): IWatchedProxyHandler_common | undefined;
+
+    /**
+     * The original (unproxied) object
+     */
+    get _target(): T
+}
+
+//@ts-ignore
+export function dualUseTracker_callOrigMethodOnTarget<O extends object, M extends keyof O>(tracker: DualUseTracker<O>, methodName: M, args: unknown[]): ReturnType<O[M]> {
+    const target = tracker._target;
+    const method = tracker._watchedProxyHandler !== undefined ? target[methodName] : Object.getPrototypeOf(Object.getPrototypeOf(tracker))[methodName];
+    return method.apply(target, args);
+}
+
+/**
+ * Used by runChangeOperation
+ */
+class ChangeCall {
+    fired_beforeListeners = new Set<ChangeListener>();
+    afterListeners = new Set<ChangeListener>();
+
+    /**
+     * "binds" the ChangeOperation parameter to the afterListeners
+     */
+    paramsForAfterListeners = new Map<ChangeListener, ChangeOperation>();
+}
+
+const runChangeOperation_Calls = newDefaultMap<object, ChangeCall>(() => new ChangeCall());
+
+/**
+ * Informs hooksToServe's beforeListeners + executes changeOperation + informs hooksToServe's afterListeners.
+ * All this while preventing listeners from beeing called twice (this is the main purpose of this function!). Even during the same operation (call) that spans a call stack (the stack can go through multiple proxy layers)
+ * <p>
+ *     This function is needed, because there's some overlapping of concerns in listener types, especially for Arrays. Also internal methods may again call the set method which itsself wants to call the propertychange_listeners.
+ * </p>
+ * @param forTarget object to sync on. All hooks passed to nested runChangeOperation calls will only be fired once.
+ * @param paramForListeners the parameter for the change listeners. It won't be run by this function / it's just the parameter. When setting to undefined, it indicates that this runChangeOperation call is only to wrap multiple nested calls / sync them on targetObject. The default anyChange hook won't be called at this level either.
+ * @param hooksToServe these hooks will be called (not twice, as mentioned).
+ * @param changeOperationFn
+ */
+export function runChangeOperation<R>(forTarget: object, paramForListeners: ChangeOperation | undefined, hooksToServe: EventHook[], changeOperationFn: () => R): R {
+    const synchronizeOn = getGlobalOrig(forTarget);
+    let isRootCall = !runChangeOperation_Calls.has(synchronizeOn); // is it not nested / the outermost call ?
+    const changeCall = runChangeOperation_Calls.get(synchronizeOn);
+    try {
+        if (paramForListeners) {
+            hooksToServe.push(getChangeHooksForObject(forTarget).anyChange); // Always serve this one as well
+            objectMembershipInGraphs.get(forTarget)?.forEach(graph => {
+                hooksToServe.push(graph._changeHook);
+            })
+
+            // Fire and register before-hooks:
+            hooksToServe.forEach(hook => {
+                hook.beforeListeners.forEach(listener => {
+                    if (!changeCall.fired_beforeListeners.has(listener)) {
+                        listener(paramForListeners); // fire
+                        changeCall.fired_beforeListeners.add(listener);
+                    }
+                })
+
+                hook.afterListeners.forEach(afterListener => {
+                    if (!changeCall.afterListeners.has(afterListener)) {
+                        changeCall.afterListeners.add(afterListener);
+                        changeCall.paramsForAfterListeners.set(afterListener, paramForListeners); // Ensure, it is called with the proper changeOperation parameter afterwards. Otherwise stuff from a higher level facade would leak to a change listeners, registered in a lower facade
+                    }
+                }); // schedule afterListeners
+            });
+        }
+
+        const result = changeOperationFn();
+
+        if (isRootCall) {
+            // call afterListeners:
+            for (const listener of changeCall.afterListeners) {
+                listener(changeCall.paramsForAfterListeners.get(listener)!); // fire
+            }
+        }
+
+        return result;
+    } finally {
+        if (isRootCall) {
+            runChangeOperation_Calls.delete(synchronizeOn);
+        }
+    }
+}
+
+export interface ForWatchedProxyHandler<T> extends DualUseTracker<T> {
+    /**
+     * Will return the handler when called through the handler
+     */
+    get _watchedProxyHandler(): IWatchedProxyHandler_common;
+
+    /**
+     * The original (unproxied) object
+     */
+    get _target(): T
 }

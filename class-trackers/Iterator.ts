@@ -1,6 +1,7 @@
-import {ClassTrackingConfiguration, Clazz, ForWatchedProxyHandler, GetIteratorValueProxiedFn} from "../common";
+import {ClassTrackingConfiguration, Clazz, GetIteratorValueProxiedFn} from "../common";
 import {WatchedProxyHandler} from "../watchedProxyFacade";
 import _ from "underscore";
+import {ForWatchedProxyHandler} from "../proxyFacade";
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // ******** THIS FILE IS NOT USED !!!!!! *********
 // ***********************************************

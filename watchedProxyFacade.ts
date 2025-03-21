@@ -1,14 +1,19 @@
-import {FacadeProxyHandler, ProxyFacade} from "./proxyFacade";
+import {
+    FacadeProxyHandler,
+    IWatchedProxyHandler_common,
+    ProxyFacade,
+    RecordedReadOnProxiedObject,
+    runChangeOperation
+} from "./proxyFacade";
 import {throwError} from "./Util";
 import {    AfterReadListener,
     ChangeListener,
     checkEsRuntimeBehaviour, EventHook,
     getPropertyDescriptor,
-    IWatchedProxyHandler_common, objectMembershipInGraphs,
+    objectMembershipInGraphs,
     ObjKey,
     RecordedRead,
-    RecordedReadOnProxiedObject,
-    runChangeOperation, UnspecificObjectChange,
+    UnspecificObjectChange,
 } from "./common";
 import {getChangeHooksForObject, changeHooksForObject} from "./objectChangeTracking";
 import _ from "underscore"

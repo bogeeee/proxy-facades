@@ -1,11 +1,10 @@
 import {
     ChangeOperation,
     ClassTrackingConfiguration,
-    DualUseTracker,
-    ForWatchedProxyHandler, IWatchedProxyHandler_common, makeIteratorTranslateValue,
+    makeIteratorTranslateValue,
     ObjKey,
     RecordedRead,
-    RecordedReadOnProxiedObject, runChangeOperation, UnspecificObjectChange
+    UnspecificObjectChange
 } from "../common";
 import {arraysAreShallowlyEqual} from "../Util";
 import {
@@ -15,6 +14,13 @@ import {
 import {installChangeTracker} from "../origChangeTracking";
 import {WatchedProxyHandler} from "../watchedProxyFacade";
 import {RecordedReadOnProxiedObjectExt} from "../RecordedReadOnProxiedObjectExt";
+import {
+    DualUseTracker,
+    ForWatchedProxyHandler,
+    IWatchedProxyHandler_common,
+    RecordedReadOnProxiedObject,
+    runChangeOperation
+} from "../proxyFacade";
 
 
 /**

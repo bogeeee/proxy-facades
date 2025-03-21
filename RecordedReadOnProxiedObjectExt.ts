@@ -1,6 +1,6 @@
-import {ChangeListener, EventHook, RecordedReadOnProxiedObject} from "./common";
+import {ChangeListener, EventHook} from "./common";
 import {installChangeTracker} from "./origChangeTracking";
-import {isProxyForAFacade} from "./proxyFacade";
+import {isProxyForAFacade, RecordedReadOnProxiedObject} from "./proxyFacade";
 
 
 /**
