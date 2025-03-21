@@ -59,14 +59,18 @@ export abstract class ProxyFacade<HANDLER extends FacadeProxyHandler<any>> exten
     /**
      *
      * @param value
-     * @return the original non-proxied value
+     * @return the original non-proxied- (by exactly this facade) value
      */
     getUnproxiedValue<O>(value: O): O {
         if(value === null || typeof value !== "object") { // not an object?
             return value;
         }
 
-        return proxyToProxyHandler.get(value)?.target as O|| value;
+        const handler = proxyToProxyHandler.get(value);
+        if(handler && handler.facade === this) {
+            return handler.target as O;
+        }
+        return value;
     }
 
     getHandlerFor(obj: object) {
