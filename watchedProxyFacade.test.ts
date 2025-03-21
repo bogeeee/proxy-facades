@@ -1622,10 +1622,10 @@ describe("PartialGraph#onAfterChange", () => {
                 address: ""
             }
         }
-        const wachtedCompProxyFacade = new WatchedProxyFacade();
+        const watchedCompProxyFacade = new WatchedProxyFacade();
         let wc_onAfterChange_calledTimes = 0;
-        wachtedCompProxyFacade.onAfterChange(() => wc_onAfterChange_calledTimes++);
-        const wcProxy = wachtedCompProxyFacade.getProxyFor(orig);
+        watchedCompProxyFacade.onAfterChange(() => wc_onAfterChange_calledTimes++);
+        const wcProxy = watchedCompProxyFacade.getProxyFor(orig);
 
         const facadeForChild = new WatchedProxyFacade();
         let facadeForChild_onChange_onAfterChange_calledTimes = 0;
@@ -1637,8 +1637,13 @@ describe("PartialGraph#onAfterChange", () => {
 
         wc_onAfterChange_calledTimes = 0;
         facadeForChild_onChange_onAfterChange_calledTimes=0
-        const proxyForChild = facadeForChild.getProxyFor(wcProxy.form);
-        proxyForChild.name="changed";
+        const proxyToPassToChild = facadeForChild.getProxyFor(wcProxy.form);
+
+        // if the child is a **watchedComponent**, it makes a proxy layer again:
+        const proxyUsedInChild = watchedCompProxyFacade.getProxyFor(proxyToPassToChild);
+        expect(proxyUsedInChild !== wcProxy.form).toBeTruthy();
+
+        proxyUsedInChild.name="changed";
         expect(wc_onAfterChange_calledTimes).toEqual(1);
         expect(facadeForChild_onChange_onAfterChange_calledTimes).toEqual(1);
 
