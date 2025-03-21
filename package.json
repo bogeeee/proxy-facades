@@ -1,6 +1,6 @@
 {
   "name": "proxy-facades",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "",
   "keywords": [
     "proxy",
@@ -17,11 +17,8 @@
   "main": "index.js",
   "exports": {
     ".": {
-      "import": "./index_esm.mjs",
-      "require": "./index.js"
-    },
-    "./develop": {
-      "browser": "./index.ts"
+      "browser": "./dist/mjs/index.js",
+      "default": "./index.js"
     }
   },
   "scripts": {
