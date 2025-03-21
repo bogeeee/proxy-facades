@@ -30,7 +30,6 @@ export abstract class RecordedReadOnProxiedObject extends RecordedRead {
 
 export type AfterReadListener = (read: RecordedRead) => void;
 
-export type AfterChangeOwnKeysListener = () => void;
 export type Clazz = {
     new(...args: any[]): unknown
 }

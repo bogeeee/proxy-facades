@@ -1,8 +1,6 @@
 import {FacadeProxyHandler, ProxyFacade} from "./proxyFacade";
 import {throwError} from "./Util";
-import {
-    AfterChangeOwnKeysListener,
-    AfterReadListener,
+import {    AfterReadListener,
     ChangeListener,
     checkEsRuntimeBehaviour, EventHook,
     getPropertyDescriptor,
