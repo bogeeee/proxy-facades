@@ -6,8 +6,8 @@ import {
 import _ from "underscore"
 import {arraysAreEqualsByPredicateFn, isObject, read, visitReplace} from "./Util";
 import {Clazz, ObjKey, RecordedRead, recordedReadsArraysAreEqual} from "./common";
-import {changeTrackedOrigObjects, deleteProperty, installChangeTracker} from "./origChangeTracking";
-import {ProxyFacade} from "./proxyFacade";
+import {installChangeTracker} from "./origChangeTracking";
+import {changeTrackedOrigObjects, ProxyFacade, deleteProperty} from "./proxyFacade";
 import exp from "constants";
 import {fail} from "assert";
 import {RecordedArrayValuesRead} from "./class-trackers/Array";

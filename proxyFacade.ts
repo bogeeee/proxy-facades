@@ -11,9 +11,8 @@ import {
     ObjKey,
     PartialGraph,
     RecordedRead,
-    SetterFlags
+    SetterFlags, UnspecificObjectChange
 } from "./common";
-import {deleteProperty} from "./origChangeTracking";
 import {getChangeHooksForObject} from "./objectChangeTracking";
 import {newDefaultMap} from "./Util";
 import {WatchedProxyHandler} from "./watchedProxyFacade";
@@ -352,3 +351,27 @@ export interface ForWatchedProxyHandler<T> extends DualUseTracker<T> {
      */
     get _target(): T
 }
+
+/**
+ * Use this to delete properties on objects that have a write tracker installed. Otherwise they are not deletable and the write tracker cannot track the object's keys modification and inform listeners
+ * @param obj
+ * @param key
+ */
+export function deleteProperty<O extends object>(obj: O, key: keyof O) {
+    if(!changeTrackedOrigObjects.hasObj(obj)) {
+        return delete obj[key];
+    }
+
+    const doesExist = Object.getOwnPropertyDescriptor(obj, key) !== undefined;
+    if (!doesExist) {
+        return true;
+    }
+
+    return runChangeOperation(obj, new UnspecificObjectChange(obj), [getChangeHooksForObject(obj).changeOwnKeys], () => {
+        //@ts-ignore
+        obj[key] = undefined; // Set to undefined first, so property change listeners will get informed
+        return delete obj[key];
+    });
+}
+
+export const changeTrackedOrigObjects = new PartialGraph();

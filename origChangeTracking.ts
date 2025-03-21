@@ -2,18 +2,10 @@
 // unproxied=not part of a proxy facade. Technically this can install Proxys as the prototype, to catch writes.
 
 
-import {PartialGraph, UnspecificObjectChange} from "./common";
-import {
-    ObjectProxyHandler,
-    changeHooksForObject,
-    getChangeHooksForObject
-} from "./objectChangeTracking";
+import {ObjectProxyHandler} from "./objectChangeTracking";
 import {getTrackingConfigFor} from "./class-trackers/index";
-import {isProxyForAFacade, runChangeOperation} from "./proxyFacade";
+import {changeTrackedOrigObjects, isProxyForAFacade} from "./proxyFacade";
 import {throwError} from "./Util";
-
-export const changeTrackedOrigObjects = new PartialGraph();
-
 
 
 /**
@@ -49,24 +41,4 @@ export function installChangeTracker(obj: object) {
     changeTrackedOrigObjects._register(obj);
 }
 
-/**
- * Use this to delete properties on objects that have a write tracker installed. Otherwise they are not deletable and the write tracker cannot track the object's keys modification and inform listeners
- * @param obj
- * @param key
- */
-export function deleteProperty<O extends object>(obj: O, key: keyof O) {
-    if(!changeTrackedOrigObjects.hasObj(obj)) {
-        return delete obj[key];
-    }
 
-    const doesExist = Object.getOwnPropertyDescriptor(obj, key) !== undefined;
-    if (!doesExist) {
-        return true;
-    }
-
-    return runChangeOperation(obj, new UnspecificObjectChange(obj), [getChangeHooksForObject(obj).changeOwnKeys], () => {
-        //@ts-ignore
-        obj[key] = undefined; // Set to undefined first, so property change listeners will get informed
-        return delete obj[key];
-    });
-}

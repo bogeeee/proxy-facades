@@ -15,10 +15,10 @@ export const ProxyFacade = cjsProxyFacade.ProxyFacade;
 export const FacadeProxyHandler = cjsProxyFacade.FacadeProxyHandler;
 export const invalidateObject = cjsProxyFacade.invalidateObject;
 export const getGlobalOrig = cjsProxyFacade.getGlobalOrig;
+export const deleteProperty = cjsProxyFacade.deleteProperty;
+export const changeTrackedOrigObjects = cjsProxyFacade.changeTrackedOrigObjects;
 
 import cjsOrigChangeTracking from "./origChangeTracking.js"
-export const deleteProperty = cjsOrigChangeTracking.deleteProperty;
-export const changeTrackedOrigObjects = cjsOrigChangeTracking.changeTrackedOrigObjects;
 export const installChangeTracker = cjsOrigChangeTracking.installChangeTracker;
 
 import cjsClassTrackers_Array from "./class-trackers/Array.js";
