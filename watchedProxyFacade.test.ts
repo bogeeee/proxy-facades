@@ -356,6 +356,48 @@ describe('ProxyFacade and installed write tracker tests', () => {
         });
 
     }
+
+    test("reads to getters should arrive at the proxy", ()=> {
+        const orig = {
+            _a: "x",
+
+            get a() {
+                return this._a;
+            },
+
+            set a(value: string) {
+                this._a = value;
+            }
+        }
+        const facade = new WatchedProxyFacade();
+        installChangeTracker(orig);
+        const reads: RecordedRead[] = []
+        facade.onAfterRead(read => reads.push(read));
+        const proxy = facade.getProxyFor(orig);
+        read(proxy.a);
+        expect(reads.length).toBe(1);
+    })
+
+    test("Setters should also track reads inside them", ()=> {
+        const orig = {
+            _a: "x",
+
+            get a() {
+                return this._a;
+            },
+
+            set a(value: string) {
+                if(this === orig) {
+                    fail("expected this to be a proxy, otherwise it cannot track reads inside here")
+                }
+                this._a = value;
+            }
+        }
+        const facade = new WatchedProxyFacade();
+        installChangeTracker(orig);
+        const proxy = facade.getProxyFor(orig);
+        proxy.a = "new"
+    })
 });
 
 describe('WatchedProxyFacade tests', () => {
@@ -864,6 +906,44 @@ describe('WatchedProxyFacade record read and watch it', () => {
             readerFn: (obj) => {read(obj.someProp)},
             writerFn: (obj) => {obj.someProp = "456"},
             falseWritesFn: (obj) => {obj.someProp="123" /* same value */}
+        }
+    });
+
+    const makeObjWithAcessors = () => {return {
+        _a: "x",
+
+        get a() {
+            return this._a;
+        },
+
+        set a(value: string) {
+            this._a = value;
+        }
+    }};
+    testRecordReadAndWatch("Set object with accessors", () => {
+        return {
+            origObj: makeObjWithAcessors(),
+            readerFn: (obj) => {read(obj.a)},
+            writerFn: (obj) => {obj.a = "123"},
+            falseReadFn: (obj) => {read((obj as any).someOtherProp)},
+        }
+    });
+
+    testRecordReadAndWatch("Set object with accessors2", () => {
+        return {
+            origObj: makeObjWithAcessors(),
+            readerFn: (obj) => {read(obj.a)},
+            writerFn: (obj) => {obj._a = "123"},
+            falseReadFn: (obj) => {read((obj as any).someOtherProp)},
+        }
+    });
+
+    testRecordReadAndWatch("Set object with accessors3", () => {
+        return {
+            origObj: makeObjWithAcessors(),
+            readerFn: (obj) => {read(obj._a)},
+            writerFn: (obj) => {obj.a = "123"},
+            falseReadFn: (obj) => {read((obj as any).someOtherProp)},
         }
     });
 
