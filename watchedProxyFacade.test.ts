@@ -622,7 +622,7 @@ describe('WatchedProxyFacade tests', () => {
         let hadRead = false;
         facade.onAfterRead(read => {
             if(read instanceof RecordedPropertyRead) {
-                expect(read.proxyHandler.facade.currentOutermostGetter.key === "value_outer");
+                expect(read.proxyHandler.facade.currentOutermostGetter!.key === "value_outer");
                 hadRead = true
             }
         });
