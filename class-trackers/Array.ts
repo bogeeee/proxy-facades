@@ -98,9 +98,7 @@ export class ArrayChangeTracker<T> extends Array<T> implements DualUseTracker<Ar
 export class RecordedArrayValuesRead extends RecordedReadOnProxiedObjectExt {
     values: unknown[];
 
-    protected get origObj() {
-        return this.obj as unknown[];
-    }
+    origObj!:unknown[];
 
 
     constructor(values: unknown[]) {
@@ -108,7 +106,7 @@ export class RecordedArrayValuesRead extends RecordedReadOnProxiedObjectExt {
         this.values = values;
     }
 
-    getAffectingChangeHooks(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["origObj"]) {
         return [
             getChangeHooksForObject(target).changeOwnKeys,
             getChangeHooksForObject(target).changeAnyProperty,
@@ -121,7 +119,7 @@ export class RecordedArrayValuesRead extends RecordedReadOnProxiedObjectExt {
             return false;
         }
 
-        return this.proxyHandler === other.proxyHandler && this.obj === other.obj && arraysAreShallowlyEqual(this.values, other.values);
+        return this.proxyHandler === other.proxyHandler && this.origObj === other.origObj && arraysAreShallowlyEqual(this.values, other.values);
     }
 
     get isChanged(): boolean {

@@ -15,10 +15,10 @@ export abstract class RecordedReadOnProxiedObjectExt extends RecordedReadOnProxi
     onAfterChange(listener: () => void, trackOriginal = false) {
         this.getAffectingChangeHooks(this.proxyHandler.proxy).forEach(eventHook => eventHook.afterListeners.add(listener));
         if (trackOriginal) {
-            if(!isProxyForAFacade(this.obj)) {
-                installChangeTracker(this.obj);
+            if(!isProxyForAFacade(this.origObj)) {
+                installChangeTracker(this.origObj);
             }
-            this.getAffectingChangeHooks(this.obj).forEach(eventHook => eventHook.afterListeners.add(listener));
+            this.getAffectingChangeHooks(this.origObj).forEach(eventHook => eventHook.afterListeners.add(listener));
         }
     }
 
@@ -26,7 +26,7 @@ export abstract class RecordedReadOnProxiedObjectExt extends RecordedReadOnProxi
      *
      */
     offAfterChange(listener: () => void) {
-        this.getAffectingChangeHooks(this.obj).forEach(eventHook => eventHook.afterListeners.delete(listener));
+        this.getAffectingChangeHooks(this.origObj).forEach(eventHook => eventHook.afterListeners.delete(listener));
         this.getAffectingChangeHooks(this.proxyHandler.proxy).forEach(eventHook => eventHook.afterListeners.delete(listener));
     }
 

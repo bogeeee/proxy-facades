@@ -66,14 +66,14 @@ export class RecordedPropertyRead extends RecordedReadOnProxiedObjectExt {
 
     get isChanged() {
         //@ts-ignore
-        return this.obj[this.key] !== this.value;
+        return this.origObj[this.key] !== this.value;
     }
 
-    getAffectingChangeHooks(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["origObj"]) {
         const result = [
             getChangeHooksForObject(target).changeSpecificProperty.get(this.key)
         ]
-        if(Array.isArray(this.obj)) {
+        if(Array.isArray(this.origObj)) {
             result.push(getChangeHooksForObject(target).unspecificChange);
         }
         return result;
@@ -84,7 +84,7 @@ export class RecordedPropertyRead extends RecordedReadOnProxiedObjectExt {
             return false;
         }
 
-        return this.proxyHandler === other.proxyHandler && this.obj === other.obj && this.key === other.key && this.value === other.value;
+        return this.proxyHandler === other.proxyHandler && this.origObj === other.origObj && this.key === other.key && this.value === other.value;
     }
 }
 
@@ -97,14 +97,14 @@ export class RecordedOwnKeysRead extends RecordedReadOnProxiedObjectExt{
     }
 
     get isChanged() {
-        return !_.isEqual(Reflect.ownKeys(this.obj), this.value);
+        return !_.isEqual(Reflect.ownKeys(this.origObj), this.value);
     }
 
-    getAffectingChangeHooks(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["origObj"]) {
         const result = [
             getChangeHooksForObject(target).changeOwnKeys
         ]
-        if(Array.isArray(this.obj)) {
+        if(Array.isArray(this.origObj)) {
             result.push(getChangeHooksForObject(target).unspecificChange);
         }
         return result;
@@ -115,7 +115,7 @@ export class RecordedOwnKeysRead extends RecordedReadOnProxiedObjectExt{
             return false;
         }
 
-        return this.proxyHandler === other.proxyHandler && this.obj === other.obj && _.isEqual(this.value, other.value);
+        return this.proxyHandler === other.proxyHandler && this.origObj === other.origObj && _.isEqual(this.value, other.value);
     }
 }
 
@@ -127,7 +127,7 @@ export class RecordedUnspecificRead extends RecordedReadOnProxiedObjectExt{
         return true;
     }
 
-    getAffectingChangeHooks(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["origObj"]) {
         return [
             getChangeHooksForObject(target).anyChange
         ]
@@ -208,7 +208,7 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
 
     fireAfterRead(read: RecordedReadOnProxiedObject) {
         read.proxyHandler = this;
-        read.obj = this.target;
+        read.origObj = this.target;
 
         this.facade._afterReadListeners.forEach(l => l(read)); // Inform listeners
     }

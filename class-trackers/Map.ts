@@ -121,7 +121,7 @@ export class RecordedMap_get extends RecordedReadOnProxiedObjectExt {
      * Result of the .get call
      */
     value: unknown;
-    obj!: Map<unknown, unknown>;
+    origObj!: Map<unknown, unknown>;
 
 
     constructor(key: unknown, keyExists: boolean, value: unknown) {
@@ -132,10 +132,10 @@ export class RecordedMap_get extends RecordedReadOnProxiedObjectExt {
     }
 
     get isChanged() {
-        return !(this.keyExists === this.obj.has(this.key) && this.value === this.obj.get(this.key));
+        return !(this.keyExists === this.origObj.has(this.key) && this.value === this.origObj.get(this.key));
     }
 
-    getAffectingChangeHooks(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["origObj"]) {
         return [
             getChangeHooksForMap(target).specificKeyAddedOrRemoved.get(this.key),
             getChangeHooksForMap(target).specificValueChanged.get(this.key),
@@ -148,7 +148,7 @@ export class RecordedMap_get extends RecordedReadOnProxiedObjectExt {
             return false;
         }
 
-        return this.proxyHandler === other.proxyHandler && this.obj === other.obj && this.key === other.key && this.keyExists == other.keyExists && this.value === other.value;
+        return this.proxyHandler === other.proxyHandler && this.origObj === other.origObj && this.key === other.key && this.keyExists == other.keyExists && this.value === other.value;
     }
 }
 
@@ -159,7 +159,7 @@ export class RecordedMap_has extends RecordedReadOnProxiedObjectExt {
      * Result of the .has call
      */
     keyExists: boolean;
-    obj!: Map<unknown, unknown>;
+    origObj!: Map<unknown, unknown>;
 
 
     constructor(key: unknown, keyExists: boolean) {
@@ -169,10 +169,10 @@ export class RecordedMap_has extends RecordedReadOnProxiedObjectExt {
     }
 
     get isChanged() {
-        return this.keyExists !== this.obj.has(this.key);
+        return this.keyExists !== this.origObj.has(this.key);
     }
 
-    getAffectingChangeHooks(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["origObj"]) {
         return [
             getChangeHooksForMap(target).specificKeyAddedOrRemoved.get(this.key),
             getChangeHooksForObject(target).unspecificChange,
@@ -184,13 +184,13 @@ export class RecordedMap_has extends RecordedReadOnProxiedObjectExt {
             return false;
         }
 
-        return this.proxyHandler === other.proxyHandler && this.obj === other.obj && this.key === other.key && this.keyExists === other.keyExists;
+        return this.proxyHandler === other.proxyHandler && this.origObj === other.origObj && this.key === other.key && this.keyExists === other.keyExists;
     }
 }
 
 export class RecordedMapKeysRead extends RecordedReadOnProxiedObjectExt {
     keys: Array<unknown>;
-    obj!: Map<unknown, unknown>;
+    origObj!: Map<unknown, unknown>;
 
 
     constructor(keys: Array<unknown>) {
@@ -198,7 +198,7 @@ export class RecordedMapKeysRead extends RecordedReadOnProxiedObjectExt {
         this.keys = keys;
     }
 
-    getAffectingChangeHooks(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["origObj"]) {
         return [
             getChangeHooksForMap(target).anyKeyAddedOrRemoved,
             getChangeHooksForObject(target).unspecificChange
@@ -210,25 +210,25 @@ export class RecordedMapKeysRead extends RecordedReadOnProxiedObjectExt {
             return false;
         }
 
-        return this.proxyHandler === other.proxyHandler && this.obj === other.obj && arraysAreShallowlyEqual(this.keys, other.keys);
+        return this.proxyHandler === other.proxyHandler && this.origObj === other.origObj && arraysAreShallowlyEqual(this.keys, other.keys);
     }
 
     get isChanged(): boolean {
-        return !arraysAreShallowlyEqual(this.keys, [...(this.obj).keys()]);
+        return !arraysAreShallowlyEqual(this.keys, [...(this.origObj).keys()]);
     }
 }
 
 export class RecordedMapValuesRead extends RecordedReadOnProxiedObjectExt {
     values: Array<unknown>;
 
-    obj!:Map<unknown, unknown>;
+    origObj!:Map<unknown, unknown>;
 
     constructor(values: Array<unknown>) {
         super();
         this.values = values;
     }
 
-    getAffectingChangeHooks(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["origObj"]) {
         return [
             getChangeHooksForMap(target).anyValueChanged,
             getChangeHooksForObject(target).unspecificChange
@@ -240,18 +240,18 @@ export class RecordedMapValuesRead extends RecordedReadOnProxiedObjectExt {
             return false;
         }
 
-        return this.proxyHandler === other.proxyHandler && this.obj === other.obj && arraysAreShallowlyEqual(this.values, other.values);
+        return this.proxyHandler === other.proxyHandler && this.origObj === other.origObj && arraysAreShallowlyEqual(this.values, other.values);
     }
 
     get isChanged(): boolean {
-        return !arraysAreShallowlyEqual(this.values, [...(this.obj).values()]);
+        return !arraysAreShallowlyEqual(this.values, [...(this.origObj).values()]);
     }
 }
 
 export class RecordedMapEntriesRead extends RecordedReadOnProxiedObjectExt {
     values: Array<[unknown, unknown]>;
 
-    obj!: Map<unknown, unknown>;
+    origObj!: Map<unknown, unknown>;
 
 
     constructor(values: Array<[unknown, unknown]>) {
@@ -259,7 +259,7 @@ export class RecordedMapEntriesRead extends RecordedReadOnProxiedObjectExt {
         this.values = values;
     }
 
-    getAffectingChangeHooks(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["origObj"]) {
         return [
             getChangeHooksForMap(target).anyKeyAddedOrRemoved,
             getChangeHooksForMap(target).anyValueChanged,
@@ -272,11 +272,11 @@ export class RecordedMapEntriesRead extends RecordedReadOnProxiedObjectExt {
             return false;
         }
 
-        return this.proxyHandler === other.proxyHandler && this.obj === other.obj && arraysWithEntriesAreShallowlyEqual(this.values, other.values);
+        return this.proxyHandler === other.proxyHandler && this.origObj === other.origObj && arraysWithEntriesAreShallowlyEqual(this.values, other.values);
     }
 
     get isChanged(): boolean {
-        return !arraysWithEntriesAreShallowlyEqual(this.values, [...(this.obj).entries()]);
+        return !arraysWithEntriesAreShallowlyEqual(this.values, [...(this.origObj).entries()]);
     }
 }
 

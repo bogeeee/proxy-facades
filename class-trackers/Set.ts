@@ -102,7 +102,7 @@ export class RecordedSet_has extends RecordedReadOnProxiedObjectExt {
      * Result of the .has call
      */
     result: boolean;
-    obj!: Set<unknown>;
+    origObj!: Set<unknown>;
 
 
     constructor(value: unknown, result: boolean) {
@@ -112,10 +112,10 @@ export class RecordedSet_has extends RecordedReadOnProxiedObjectExt {
     }
 
     get isChanged() {
-        return this.result !== this.obj.has(this.value);
+        return this.result !== this.origObj.has(this.value);
     }
 
-    getAffectingChangeHooks(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["origObj"]) {
         return [
             getChangeHooksForSet(target).afterSpecificValueChanged.get(this.value),
             getChangeHooksForObject(target).unspecificChange
@@ -127,14 +127,14 @@ export class RecordedSet_has extends RecordedReadOnProxiedObjectExt {
             return false;
         }
 
-        return this.proxyHandler === other.proxyHandler && this.obj === other.obj && this.value === other.value && this.result === other.result;
+        return this.proxyHandler === other.proxyHandler && this.origObj === other.origObj && this.value === other.value && this.result === other.result;
     }
 }
 
 export class RecordedSetValuesRead extends RecordedReadOnProxiedObjectExt {
     values: Array<unknown>;
 
-    obj!:Set<unknown>;
+    origObj!:Set<unknown>;
 
 
     constructor(values: Array<unknown>) {
@@ -142,7 +142,7 @@ export class RecordedSetValuesRead extends RecordedReadOnProxiedObjectExt {
         this.values = values;
     }
 
-    getAffectingChangeHooks(target: this["obj"]) {
+    getAffectingChangeHooks(target: this["origObj"]) {
         return [
             getChangeHooksForSet(target).afterAnyValueChanged,
             getChangeHooksForObject(target).unspecificChange
@@ -154,11 +154,11 @@ export class RecordedSetValuesRead extends RecordedReadOnProxiedObjectExt {
             return false;
         }
 
-        return this.proxyHandler === other.proxyHandler && this.obj === other.obj && arraysAreShallowlyEqual(this.values, other.values);
+        return this.proxyHandler === other.proxyHandler && this.origObj === other.origObj && arraysAreShallowlyEqual(this.values, other.values);
     }
 
     get isChanged(): boolean {
-        return !arraysAreShallowlyEqual(this.values, [...(this.obj).values()]);
+        return !arraysAreShallowlyEqual(this.values, [...(this.origObj).values()]);
     }
 }
 

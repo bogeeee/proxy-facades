@@ -379,7 +379,7 @@ describe('WatchedProxyFacade tests', () => {
         }
 
         return arraysAreEqualsByPredicateFn(reads, expected, (propRead, exp) => {
-            return propRead.obj === exp.obj && propRead.key === exp.key && propRead.value === exp.value && arraysAreShallowlyEqual((propRead as unknown as RecordedArrayValuesRead).values, exp.values);
+            return propRead.origObj === exp.obj && propRead.key === exp.key && propRead.value === exp.value && arraysAreShallowlyEqual((propRead as unknown as RecordedArrayValuesRead).values, exp.values);
         })
     }
 

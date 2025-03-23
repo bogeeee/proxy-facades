@@ -238,7 +238,11 @@ export abstract class RecordedReadOnProxiedObject extends RecordedRead {
     /**
      * A bit redundant with proxyhandler. But for performance reasons, we leave it
      */
-    obj!: object;
+    origObj!: object;
+
+    get proxy() {
+        return this.proxyHandler.proxy
+    }
 }
 
 export interface IWatchedProxyHandler_common {
