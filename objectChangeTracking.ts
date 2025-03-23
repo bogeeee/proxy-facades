@@ -94,12 +94,12 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
             delete target[key]; // delete the old, or the following Object.defineProperty will conflict
         }
 
-        const newSetter=  (newValue: any) => {
+        function newSetter(this:any, newValue: any) {
             const changeHooksForTarget = getChangeHooksForObject(target);
 
             if(origSetter !== undefined) {
                 runChangeOperation(target, new UnspecificObjectChange(target),[changeHooksForTarget.setterInvoke.get(key)],() => {
-                    origSetter.apply(target, [newValue]);  // call the setter
+                    origSetter.apply(this, [newValue]);  // call the setter
                 });
                 return;
             }
@@ -127,9 +127,9 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
         }
         (newSetter as SetterFlags).origHadSetter = origSetter !== undefined;
 
-        const newGetter = () => {
+        function newGetter(this: any) {
             if(origGetter !== undefined) {
-                currentValue = origGetter.apply(target);  // call the getter
+                currentValue = origGetter.apply(this);  // call the getter
             }
             return currentValue;
         }
