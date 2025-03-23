@@ -223,10 +223,10 @@ export class WatchedProxyHandler extends FacadeProxyHandler<WatchedProxyFacade> 
         const thisHandler = this;
         const receiverMustBeNonProxied = this.trackingConfig?.receiverMustBeNonProxied === true;
 
-        if(key === "_watchedProxyHandler") { // TODO: use symbol for that (performance)
+        if(key === "_watchedProxyHandler") {
             return this;
         }
-        if(key === "_target") { // TODO: use symbol for that (performance)
+        if(key === "_target") {
             return this.target;
         }
 

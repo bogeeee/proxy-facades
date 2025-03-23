@@ -606,6 +606,30 @@ describe('WatchedProxyFacade tests', () => {
         someObjProxyB.value = proxyA; // Should not unwrap proxyA and store orig
         expect(someObjOrig.value === proxyA).toBeTruthy();
     })
+
+    test("Track getters", () => {
+        const orig = {
+            _value: "123",
+            get value() {
+                return this._value;
+            },
+            get value_outer() {
+                return this.value;
+            }
+        }
+        const facade = new WatchedProxyFacade();
+        facade.trackGetterCalls = true;
+        let hadRead = false;
+        facade.onAfterRead(read => {
+            if(read instanceof RecordedPropertyRead) {
+                expect(read.proxyHandler.facade.currentOutermostGetter.key === "value_outer");
+                hadRead = true
+            }
+        });
+        read(facade.getProxyFor(orig).value_outer);
+        expect(hadRead).toBeTruthy();
+
+    })
 });
 
 

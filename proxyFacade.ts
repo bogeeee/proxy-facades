@@ -24,9 +24,16 @@ export abstract class ProxyFacade<HANDLER extends FacadeProxyHandler<any>> exten
      * Treats them like functions, meaning, they get a proxied 'this'. WatchProxies will see the access to the real properties
      */
     public propertyAccessorsAsWhiteBox = true;
+    public trackGetterCalls = false;
 
     // *** State: ***
     protected objectsToProxyHandlers = new WeakMap<object, HANDLER>();
+
+
+    /**
+     * For react-deepwatch's binding function. Only, when trackGetterCalls is enabled
+     */
+    public currentOutermostGetter?: GetterCall;
 
     debug_id = ++idGenerator;
 
@@ -112,7 +119,18 @@ export abstract class FacadeProxyHandler<FACADE extends ProxyFacade<any>> implem
         const getter = getPropertyDescriptor(this.target, p)?.get;
         let value;
         if(this.facade.propertyAccessorsAsWhiteBox && getter !== undefined && (getter as GetterFlags).origHadGetter !== false) { // Access via real property accessor ?
-            return value = getter.apply(this.proxy,[]); // Call the accessor with a proxied this
+            const isInner = this.facade.currentOutermostGetter !== undefined;
+            if(this.facade.trackGetterCalls && !isInner) {
+                this.facade.currentOutermostGetter = new GetterCall(this.proxy, p);
+            }
+            try {
+                return value = getter.apply(this.proxy, []); // Call the accessor with a proxied this
+            }
+            finally {
+                if(this.facade.trackGetterCalls && isInner) {
+                    this.facade.currentOutermostGetter = undefined
+                }
+            }
         }
         else {
             //@ts-ignore
@@ -382,6 +400,16 @@ export function deleteProperty<O extends object>(obj: O, key: keyof O) {
         obj[key] = undefined; // Set to undefined first, so property change listeners will get informed
         return delete obj[key];
     });
+}
+
+export class GetterCall {
+    proxy: object;
+    key: ObjKey;
+
+    constructor(proxy: object, key: ObjKey) {
+        this.proxy = proxy;
+        this.key = key;
+    }
 }
 
 export const changeTrackedOrigObjects = new PartialGraph();
