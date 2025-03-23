@@ -627,6 +627,7 @@ describe('WatchedProxyFacade tests', () => {
             }
         });
         read(facade.getProxyFor(orig).value_outer);
+        expect(facade.currentOutermostGetter).toBeUndefined()
         expect(hadRead).toBeTruthy();
 
     })

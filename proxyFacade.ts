@@ -119,15 +119,15 @@ export abstract class FacadeProxyHandler<FACADE extends ProxyFacade<any>> implem
         const getter = getPropertyDescriptor(this.target, p)?.get;
         let value;
         if(this.facade.propertyAccessorsAsWhiteBox && getter !== undefined && (getter as GetterFlags).origHadGetter !== false) { // Access via real property accessor ?
-            const isInner = this.facade.currentOutermostGetter !== undefined;
-            if(this.facade.trackGetterCalls && !isInner) {
+            const isOuter = this.facade.currentOutermostGetter === undefined;
+            if(this.facade.trackGetterCalls && isOuter) {
                 this.facade.currentOutermostGetter = new GetterCall(this.proxy, p);
             }
             try {
                 return value = getter.apply(this.proxy, []); // Call the accessor with a proxied this
             }
             finally {
-                if(this.facade.trackGetterCalls && isInner) {
+                if(this.facade.trackGetterCalls && isOuter) {
                     this.facade.currentOutermostGetter = undefined
                 }
             }
