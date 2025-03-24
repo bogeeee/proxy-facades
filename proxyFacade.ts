@@ -204,6 +204,7 @@ export function isProxyForAFacade(obj: object) {
  */
 export function invalidateObject(obj: object, message: string, cause?: Error) {
     const throwInvalid = () => {
+        //ts-ignore TS2554 Expected 0-1 arguments, but got 2  - produces compile error when downstream projects include this lib and compile for <=ES2020.
         throw new Error(message, {cause: cause});
     }
 
