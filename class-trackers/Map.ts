@@ -121,7 +121,7 @@ export class RecordedMap_get extends RecordedReadOnProxiedObjectExt {
      * Result of the .get call
      */
     value: unknown;
-    origObj!: Map<unknown, unknown>;
+    declare origObj: Map<unknown, unknown>;
 
 
     constructor(key: unknown, keyExists: boolean, value: unknown) {
@@ -159,7 +159,7 @@ export class RecordedMap_has extends RecordedReadOnProxiedObjectExt {
      * Result of the .has call
      */
     keyExists: boolean;
-    origObj!: Map<unknown, unknown>;
+    declare origObj: Map<unknown, unknown>;
 
 
     constructor(key: unknown, keyExists: boolean) {
@@ -190,7 +190,7 @@ export class RecordedMap_has extends RecordedReadOnProxiedObjectExt {
 
 export class RecordedMapKeysRead extends RecordedReadOnProxiedObjectExt {
     keys: Array<unknown>;
-    origObj!: Map<unknown, unknown>;
+    declare origObj: Map<unknown, unknown>;
 
 
     constructor(keys: Array<unknown>) {
@@ -221,7 +221,7 @@ export class RecordedMapKeysRead extends RecordedReadOnProxiedObjectExt {
 export class RecordedMapValuesRead extends RecordedReadOnProxiedObjectExt {
     values: Array<unknown>;
 
-    origObj!:Map<unknown, unknown>;
+    declare origObj:Map<unknown, unknown>;
 
     constructor(values: Array<unknown>) {
         super();
@@ -251,7 +251,7 @@ export class RecordedMapValuesRead extends RecordedReadOnProxiedObjectExt {
 export class RecordedMapEntriesRead extends RecordedReadOnProxiedObjectExt {
     values: Array<[unknown, unknown]>;
 
-    origObj!: Map<unknown, unknown>;
+    declare origObj: Map<unknown, unknown>;
 
 
     constructor(values: Array<[unknown, unknown]>) {

@@ -66,6 +66,7 @@ function outputExpecterCode<T extends object>(orig: T | (() => T), fn: (proxy: T
         }
     })
     read(fn(proxy));
+    console.log(`//@ts-ignore`)
     console.log(`expectUsingMethodsOrFields(${origJS}, ${fnToString(fn)}, [${[...usedFields.values()].map(f => typeof f === "string"?`"${f}"`:`${f.toString().replace(/(^Symbol\()|(\)$)/g,"")}`). join(",")}])`)
 
     function fnToString(fn: (...args: any[]) => unknown) {

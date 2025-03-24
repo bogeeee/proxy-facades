@@ -138,34 +138,61 @@ export function checkEsRuntimeBehaviour() {
     // **************************************************************************************************
     // **** The following code is generated via `npm run dev:generateEsRuntimeBehaviourCheckerCode`: ****
     // **************************************************************************************************
+    //@ts-ignore
     expectUsingMethodsOrFields(["a"], v=>v.at(0), ["at","length","0"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c"], v=>v.concat("d","e","f"), ["concat","constructor",Symbol.isConcatSpreadable,"length","0","1","2"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c"], v=>v.map(x=>read(x)), ["map","length","constructor","0","1","2"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c"], v=>v.forEach(x=>read(x)), ["forEach","length","0","1","2"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c"], v=>v.join(","), ["join","length","0","1","2"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c","d"], v=>v.slice(1,3), ["slice","length","constructor","1","2"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c"], v=>v.some(x=>x==="a"), ["some","length","0"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c"], v=>v.filter(x=>x==="a"), ["filter","length","constructor","0","1","2"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c"], v=>v.find(x=>x==="a"), ["find","length","0"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c"], v=>v.every(x=>x==="a"), ["every","length","0","1"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c"], v=>v.findIndex(x=>x==="a"), ["findIndex","length","0"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c"], v=>v.includes("b",1), ["includes","length","1"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c"], v=>v.indexOf("b",1), ["indexOf","length","1"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c"], v=>v[Symbol.iterator]().next(), [Symbol.iterator,"length","0"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","b"], v=>v.lastIndexOf("b",1), ["lastIndexOf","length","1"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","b"], v=>v.reduce((p,c)=>p+c), ["reduce","length","0","1","2"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","b"], v=>v.reduceRight((p,c)=>p+c), ["reduceRight","length","2","1","0"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","b"], v=>v.toLocaleString(), ["toLocaleString","length","0","1","2"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","b"], v=>v.toString(), ["toString","join","length","0","1","2"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c"], v=>v.unshift("_a","_b"), ["length","2","1","0"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c","d"], v=>v.splice(1,2,"newB","newC","newX"), ["length","1","2","3"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c","d"], v=>v.copyWithin(3,1,3), ["length","1","0","2","3"])
+    //@ts-ignore
     expectUsingMethodsOrFields(["a","b","c","d"], v=>v.reverse(), ["length","0","3","1","2"])
     //@ts-ignore
     if([].values().forEach) { // Runtime supports these iterator functions like forEach, filter, ....
+        //@ts-ignore
         expectUsingMethodsOrFields(["a","b","c"][Symbol.iterator](), it=>it.forEach(x=>x), ["forEach","next"])
+        //@ts-ignore
         expectUsingMethodsOrFields(["a","b","c"][Symbol.iterator](), it=>it.filter(x=>x==="b"), ["filter","next"])
+        //@ts-ignore
         expectUsingMethodsOrFields(["a","b","c"][Symbol.iterator](), it=>it.take(2), ["take","next"])
+        //@ts-ignore
         expectUsingMethodsOrFields(["a","b","c"][Symbol.iterator](), it=>it.toArray(), ["toArray","next"])
     }
 

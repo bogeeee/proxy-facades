@@ -98,7 +98,7 @@ export class ArrayChangeTracker<T> extends Array<T> implements DualUseTracker<Ar
 export class RecordedArrayValuesRead extends RecordedReadOnProxiedObjectExt {
     values: unknown[];
 
-    origObj!:unknown[];
+    declare origObj: unknown[];
 
 
     constructor(values: unknown[]) {

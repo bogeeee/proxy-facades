@@ -102,7 +102,7 @@ export class RecordedSet_has extends RecordedReadOnProxiedObjectExt {
      * Result of the .has call
      */
     result: boolean;
-    origObj!: Set<unknown>;
+    declare origObj: Set<unknown>;
 
 
     constructor(value: unknown, result: boolean) {
@@ -134,7 +134,7 @@ export class RecordedSet_has extends RecordedReadOnProxiedObjectExt {
 export class RecordedSetValuesRead extends RecordedReadOnProxiedObjectExt {
     values: Array<unknown>;
 
-    origObj!:Set<unknown>;
+    declare origObj:Set<unknown>;
 
 
     constructor(values: Array<unknown>) {
