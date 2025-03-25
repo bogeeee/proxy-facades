@@ -14,18 +14,18 @@
     "url": "https://github.com/bogeeee/proxy-facades.git"
   },
   "license": "MIT",
-  "main": "index.js",
+  "main": "./dist/default/index.js",
   "exports": {
     ".": {
-      "browser": "./dist/mjs/index.js",
-      "default": "./index.js"
+      "browser": "./dist/browser/index.js",
+      "default": "./dist/default/index.js"
     }
   },
   "scripts": {
     "dev:playground.ts": "tsx devPlayground.ts",
     "dev:generateEsRuntimeBehaviourCheckerCode": "tsx dev_generateEsRuntimeBehaviourCheckerCode.ts",
     "clean": "tsc --build --clean && rimraf dist",
-    "build": "tsc --build --force && tsc -module ES6 --outDir dist/mjs",
+    "build": "tsc --build --force && tsc -module ES6 --outDir dist/browser",
     "test": "npm run clean && vitest --clearScreen --hideSkippedTests --poolOptions.threads.singleThread",
     "test_specific": "npm run clean && vitest --clearScreen --hideSkippedTests --poolOptions.threads.singleThread --testNamePattern \"add.*should behave normally. With writes through installed write tracker\"",
     "prepublish": "npm run clean && npm run build",
@@ -34,9 +34,7 @@
 
   },
   "dependencies": {
-    "underscore": "^1.13.3",
-    "@types/underscore": "^1.11.4",
-    "@types/node": "^20.12.7"
+    "underscore": "^1.13.3"
   },
   "devDependencies": {
     "tsx": "^4.7.0",
@@ -44,6 +42,8 @@
     "rimraf": "=5.0.5",
     "ncp": "=2.0.0",
     "typescript": "^5.4.5",
-    "vitest": "^1.5.0"
+    "vitest": "^1.5.0",
+    "@types/underscore": "^1.11.4",
+    "@types/node": "^20.12.7"
   }
 }
