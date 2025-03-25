@@ -114,9 +114,8 @@ export function newDefaultMap<K,V>(createDefaultValueFn: () => V): DefaultMap<K,
 /**
  * A WeakMap<K, Set<V>>. But automatically add a new Set if needed
  */
-export class WeakMapSet<K, V> extends MapSet<K, V> {
-    //@ts-ignore
-    map = new WeakMap<K, Set<V>>();
+export class WeakMapSet<K extends WeakKey, V> extends MapSet<K, V> {
+    map = new WeakMap<K, Set<V>>() as Map<K, Set<V>>;
 }
 
 export function arraysAreEqualsByPredicateFn<A, B>(a: A[], b: B[], equalsFn: (a: A,b: B) => boolean) {

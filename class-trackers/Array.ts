@@ -82,14 +82,11 @@ export class ArrayChangeTracker<T> extends Array<T> implements DualUseTracker<Ar
         return  this._withUnspecificChange(() => super.shift())
     }
 
-    //@ts-ignore
-    sort(...args: any[]): Array<T> {
+    sort(...args: any[]): this {
         return this._withUnspecificChange(()=> super.sort());
     }
 
-
-    //@ts-ignore
-    fill(...args: any[]): Array<T> {
+    fill(...args: any[]): this {
         return this._withUnspecificChange(() => super.fill(...args as [any, any, any]));
     }
 
