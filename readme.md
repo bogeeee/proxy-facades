@@ -46,7 +46,7 @@ proxy.users[1].active=false; // Modify some deep value -> will log "something ha
 ````
 
 ### Watch for changes of precisely those values, that you've read before
-This variant of a proxy facade is used in [react-deepwatch](). With this, you have a hook for an event when some (deep) value changes of precisely the data, that was read by you.
+This variant of a proxy facade is used in [react-deepwatch](https://github.com/bogeeee/react-deepwatch). With this, you have a hook for an event when some (deep) value changes of precisely the data, that was read by you.
 
 This examples records all your **reads** and watches them for changes afterwards:
 
