@@ -86,12 +86,28 @@ export class MapSet<K, V> {
  * This Map does not return empty values, so there's always a default value created
  */
 export abstract class DefaultMap<K, V> extends Map<K,V>{
-    abstract createDefaultValue(): V;
+    abstract createDefaultValue(key: K): V;
 
     get(key: K): V {
         let result = super.get(key);
         if(result === undefined) {
-            result = this.createDefaultValue();
+            result = this.createDefaultValue(key);
+            this.set(key, result);
+        }
+        return result;
+    }
+}
+
+/**
+ * This Map does not return empty values, so there's always a default value created
+ */
+export abstract class DefaultWeakMap<K extends Object, V> extends WeakMap<K,V>{
+    abstract createDefaultValue(key: K): V;
+
+    get(key: K): V {
+        let result = super.get(key);
+        if(result === undefined) {
+            result = this.createDefaultValue(key);
             this.set(key, result);
         }
         return result;
@@ -103,11 +119,24 @@ export abstract class DefaultMap<K, V> extends Map<K,V>{
  * @param createDefaultValueFn
  * @returns a Map that creates and inserts a default value when that value does not exist. So the #get method always returns something.
  */
-export function newDefaultMap<K,V>(createDefaultValueFn: () => V): DefaultMap<K, V> {
+export function newDefaultMap<K,V>(createDefaultValueFn: (key: K) => V): DefaultMap<K, V> {
     return new class extends DefaultMap<K, V> {
-       createDefaultValue(): V {
-           return createDefaultValueFn();
-       }
+        createDefaultValue(key: K): V {
+            return createDefaultValueFn(key);
+        }
+    }()
+}
+
+/**
+ *
+ * @param createDefaultValueFn
+ * @returns a WeakMap that creates and inserts a default value when that value does not exist. So the #get method always returns something.
+ */
+export function newDefaultWeakMap<K,V>(createDefaultValueFn: (key: K) => V): DefaultMap<K, V> {
+    return new class extends DefaultMap<K, V> {
+        createDefaultValue(key: K): V {
+            return createDefaultValueFn(key);
+        }
     }()
 }
 

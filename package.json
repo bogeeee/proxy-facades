@@ -19,6 +19,10 @@
     ".": {
       "import": "./dist/esm/index.js",
       "require": "./dist/commonjs/index.js"
+    },
+    "./retsync": {
+      "import": "./dist/esm/retsync.js",
+      "require": "./dist/commonjs/retsync.js"
     }
   },
   "scripts": {
