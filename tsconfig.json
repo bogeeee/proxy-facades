@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "outDir": "dist/default",
+    "outDir": "dist/commonjs",
     /* Visit https://aka.ms/tsconfig to read more about this file */
     "composite": true,
     "declaration": true,
