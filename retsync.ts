@@ -14,16 +14,21 @@ type Retsync2promiseOptions = {
     checkSaved?: boolean
 }
 
-class Retsync2promiseCall {
+/**
+ * Internal / used in frameworks.
+ */
+export class Retsync2promiseCall {
 
 }
 
 /**
- * Global state. Shared with frameworks.
+ * Global state. Internal / shared with frameworks.
  */
 export const _global = new class {
     resolvedPromiseValues = new WeakMap<Promise<any>, unknown>();
     retsync2promiseCall?: Retsync2promiseCall;
+    globalObj = {};
+    resourcePromises = newDefaultWeakMap((key) => new Map<string | number | undefined, Promise<unknown>>())
 }
 
 /**
@@ -50,7 +55,7 @@ export async function retsync2promise<T>(repeatableFn: () => T, options: Retsync
         try {
             return runRepeatableFn();
         } catch (e) {
-            if (e instanceof RetsyncWaitsForPromiseException) {
+            if (e != null && e instanceof RetsyncWaitsForPromiseException) {
                 if (e.checkSaved || (e.checkSaved === undefined &&  options.checkSaved !== false)) {
                     const optionHint = `Hint: See also: Retsync2promiseOptions#checkSaved`
                     // Check if repeatableFn is behaving in repeatable symantics and saves the promise
@@ -103,9 +108,6 @@ export function promise2retsync<T>(savedPromise: Promise<T>): T {
     throw new RetsyncWaitsForPromiseException(savedPromise)
 }
 
-const globalObj = {};
-const resourcePromises = newDefaultWeakMap((key) => new Map<string | number | undefined, Promise<unknown>>())
-
 /**
  * Makes async code usable in retsync code.
  * <p>
@@ -117,11 +119,17 @@ const resourcePromises = newDefaultWeakMap((key) => new Map<string | number | un
  * @param loaderFn
  * @param idObj object to associate this call to. undefined means globally and the idKey primitive value is the only key.
  * @param idKey Additional primitive key under idObj.
+ * @see cleanResource
  */
 export function asyncResource2retsync<T>(loaderFn: ()=> Promise<T>, idObj: object | undefined, idKey?: (string|number)): T {
-    idObj = idObj || globalObj;
+    // Validity check:
+    if(!idObj && !idKey) {
+        throw new Error("Either idObj or idKey must be specified");
+    }
 
-    const promisesForIdObj = resourcePromises.get(idObj);
+    idObj = idObj || _global.globalObj;
+
+    const promisesForIdObj = _global.resourcePromises.get(idObj);
 
     let promise = promisesForIdObj.get(idKey);
     if(!promise) {
@@ -138,6 +146,23 @@ export function asyncResource2retsync<T>(loaderFn: ()=> Promise<T>, idObj: objec
         }
         throw e;
     }
+}
+
+/**
+ * Cleans the promise and therefore the result behind the given obj+key like used in {@link asyncResource2retsync}.
+ * Call this i.e. on the event that the resource has change and you want to "invalidate the cached value", so it will be fetched fresh next time.
+ * @param idObj
+ * @param idKey
+ */
+function cleanResource(idObj: object | undefined, idKey?: (string|number)) {
+    // Validity check:
+    if(!idObj && !idKey) {
+        throw new Error("Either idObj or idKey must be specified");
+    }
+
+    idObj = idObj || _global.globalObj;
+    const promisesForIdObj = _global.resourcePromises.get(idObj);
+    promisesForIdObj.delete(idKey);
 }
 
 
