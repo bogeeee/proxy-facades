@@ -14,9 +14,18 @@ type Retsync2promiseOptions = {
     checkSaved?: boolean
 }
 
-const resolvedPromiseValues = new WeakMap<Promise<any>, unknown>();
+class Retsync2promiseCall {
 
-let callerHandlesRetsync = false
+}
+
+/**
+ * Global state. Shared with frameworks.
+ */
+export const _global = new class {
+    resolvedPromiseValues = new WeakMap<Promise<any>, unknown>();
+    retsync2promiseCall?: Retsync2promiseCall;
+}
+
 /**
  * Let's you run retsync code and wait, till it is finished.
  * @param repeatableFn
@@ -24,16 +33,16 @@ let callerHandlesRetsync = false
  */
 export async function retsync2promise<T>(repeatableFn: () => T, options: Retsync2promiseOptions = {}): Promise<T> {
     /**
-     * ...while setting the callerHandlesRetsync indicator
+     * ...while indicating that it is being called
      */
     function runRepeatableFn() {
-        const orig_callerHandlesRetsync = callerHandlesRetsync;
+        const orig_retsync2promiseCall = _global.retsync2promiseCall;
         try {
-            callerHandlesRetsync = true;
+            _global.retsync2promiseCall = new Retsync2promiseCall();
             return repeatableFn();
         }
         finally {
-            callerHandlesRetsync = orig_callerHandlesRetsync;
+            _global.retsync2promiseCall = orig_retsync2promiseCall;
         }
     }
 
@@ -65,7 +74,7 @@ export async function retsync2promise<T>(repeatableFn: () => T, options: Retsync
                     }
                 }
 
-                resolvedPromiseValues.set(e.promise, await e.promise);
+                _global.resolvedPromiseValues.set(e.promise, await e.promise);
                 // Try again. Now it will hit the resolved value
             } else {
                 throw e;
@@ -87,8 +96,8 @@ export async function retsync2promise<T>(repeatableFn: () => T, options: Retsync
  * @param savedPromise You must save/fix the promise somewhere, so you reuse it the next time you encounter it.
  */
 export function promise2retsync<T>(savedPromise: Promise<T>): T {
-    if(resolvedPromiseValues.has(savedPromise)) {
-        return resolvedPromiseValues.get(savedPromise) as T;
+    if(_global.resolvedPromiseValues.has(savedPromise)) {
+        return _global.resolvedPromiseValues.get(savedPromise) as T;
     }
 
     throw new RetsyncWaitsForPromiseException(savedPromise)
@@ -147,7 +156,7 @@ export class RetsyncWaitsForPromiseException extends Error {
 }
 
 export function checkThatCallerHandlesRetsync() {
-    if(!callerHandlesRetsync) {
+    if(!_global.retsync2promiseCall) {
         throw new Error("The method, you are calling uses retsync code and needs to be wrapped at some ancestor caller level with retsync2promise. I.e. 'const result = await retsync2promise(() => {...call the function that (deep inside) uses **retryable*** - synchronous code...}});");
     }
 }
