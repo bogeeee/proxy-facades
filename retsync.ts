@@ -183,7 +183,7 @@ export class RetsyncWaitsForPromiseException extends Error {
     checkSaved?: boolean;
 
     constructor(promise: Promise<any>) {
-        super("Some retsync style code (see call stack / caller of promise2retsync) wants to await an async operation. To make this possible, you need to wrapt it at some ancestor caller level with retsync2promise. I.e. 'const result = await retsync2promise(() => {...your **retryable*** - synchronous code...}});");
+        super("Some retsync style code (see call stack / caller of promise2retsync) wants to await an async operation. To make this possible, you need to wrap it at some ancestor caller level with retsync2promise. I.e. 'const result = await retsync2promise(() => {...your **retryable*** - synchronous code...}});");
         this.promise = promise;
     }
 }
