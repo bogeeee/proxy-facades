@@ -33,6 +33,7 @@ export const _global = new class {
 
 /**
  * Let's you run retsync code and wait, till it is finished.
+ * Errors by promises won't be catched. They will fall down, so you can catch them. Error state is not cached, so it will always be tried fresh on every retsync2promise run.
  * @param repeatableFn
  * @param options
  */
@@ -116,6 +117,9 @@ export function promise2retsync<T>(savedPromise: Promise<T>): T {
  * <code>asyncResource2retsync( async() => {...load the avatar...}, myUser, "getAvatar");</code>
  * So the User#getAvatar is, what uniquely identifies the loaderFn here.
  * </p>
+ * <p>
+ *     Error handling: Failed promises (loaderFn fails) are forgotten, so next time the retsync code invokes asyncResource2retsync, it is tried fresh again
+ * </p>
  * @param loaderFn
  * @param idObj object to associate this call to. undefined means globally and the idKey primitive value is the only key.
  * @param idKey Additional primitive key under idObj.
@@ -135,6 +139,10 @@ export function asyncResource2retsync<T>(loaderFn: ()=> Promise<T>, idObj: objec
     if(!promise) {
         promise = loaderFn();
         promisesForIdObj.set(idKey, promise);
+        // Forget on error:
+        promise.catch(() => {
+            promisesForIdObj.delete(idKey);
+        });
     }
     try {
         return promise2retsync(promise as Promise<T>);
