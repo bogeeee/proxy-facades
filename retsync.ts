@@ -162,7 +162,7 @@ export function asyncResource2retsync<T>(loaderFn: ()=> Promise<T>, idObj: objec
  * @param idObj
  * @param idKey
  */
-function cleanResource(idObj: object | undefined, idKey?: (string|number)) {
+export function cleanResource(idObj: object | undefined, idKey?: (string|number)) {
     // Validity check:
     if(!idObj && !idKey) {
         throw new Error("Either idObj or idKey must be specified");
