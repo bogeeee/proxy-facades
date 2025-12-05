@@ -323,11 +323,10 @@ export class MapReadTracker<K, V> extends Map<K, V> implements ForWatchedProxyHa
     }
 
     values(): MapIterator<V> {
-        const result = this._target.values();
-
-        let recordedMapValuesRead = new RecordedMapValuesRead([...result]);
+        let recordedMapValuesRead = new RecordedMapValuesRead([...this._target.values()]);
         this._watchedProxyHandler?.fireAfterRead(recordedMapValuesRead);
 
+        const result = this._target.values();
         return makeIteratorTranslateValue(result, (value) => this._watchedProxyHandler.getFacade().getProxyFor(value));
     }
 
@@ -340,11 +339,10 @@ export class MapReadTracker<K, V> extends Map<K, V> implements ForWatchedProxyHa
     }
 
     keys(): MapIterator<K> {
-        const result = this._target.keys();
-
-        let recordedMapKeysRead = new RecordedMapKeysRead([...result]);
+        let recordedMapKeysRead = new RecordedMapKeysRead([...this._target.keys()]);
         this._watchedProxyHandler?.fireAfterRead(recordedMapKeysRead);
 
+        const result = this._target.keys();
         return makeIteratorTranslateValue(result, (key) => this._watchedProxyHandler.getFacade().getProxyFor(key));
     }
 
