@@ -1424,6 +1424,22 @@ describe('WatchedProxyFacade integrity', () => {
     },"Set");
 
     testWriterConsitency(() => {return {
+        origObj: new Map([["a", {name:"Alice"}],["b", {name:"Bob"}]]),
+        writerFn: (map) => {
+            expect([...map.values()]).toEqual([{name:"Alice"}, {name:"Bob"}]);
+            expect([...map.keys()]).toEqual(["a","b"]);
+            expect(map.get("b")).toEqual({name:"Bob"});
+            map.set("c", {name: "Clarissa"})
+            expect([...map.values()].length).toBe(3);
+            expect([...map.keys()]).toEqual(["a","b","c"]);
+            expect(map.get("c")).toEqual({name: "Clarissa"});
+            map.delete("b");
+            expect(map.get("b")).toBeUndefined();
+            expect(map.has("b")).toBeFalsy();
+        }}
+    },"Map");
+
+    testWriterConsitency(() => {return {
         origObj: new Date(12345),
         writerFn: (date: Date) => {
             expect(Object.prototype.toString.call(date)).toBe("[object Date]"); // Used in _.isEqual comparison
