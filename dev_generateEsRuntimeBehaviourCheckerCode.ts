@@ -36,6 +36,9 @@ outputExpecterCode(() => ["a", "b", "c"][Symbol.iterator](), it => it.take(2));
 outputExpecterCode(() => ["a", "b", "c"][Symbol.iterator](), it => it.toArray());
 console.log("}")
 
+// Date:
+//outputExpecterCode(new Date(), v => v.setTime(123)); // TypeError: Method Date.prototype.setTime called on incompatible receiver [object Date]
+
 // Set:
 //outputExpecterCode(new Set<string>(["a","b","c"]), v => v.forEach(i => read(i))) // TypeError: Method Set.prototype.forEach called on incompatible receiver #<Set>
 //outputExpecterCode(new Set<string>(["a","b","c"]), v => v.intersection(new Set<string>(["b","c","e"]))) // TypeError: Method Set.prototype.intersection called on incompatible receiver #<Set>
