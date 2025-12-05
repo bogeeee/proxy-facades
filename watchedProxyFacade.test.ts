@@ -51,6 +51,18 @@ describe('ProxyFacade tests', () => {
         expect(collected).toEqual(origArray);
     })
 
+    test("Date", () => {
+        const origDate = new Date(12345);
+        expect(origDate.getTime()).toBe(12345);
+        const proxy = new WatchedProxyFacade().getProxyFor(origDate);
+        expect(proxy.getTime()).toBe(12345);
+        proxy.setTime(456);
+        expect(proxy.getTime()).toBe(456);
+        expect(origDate.getTime()).toBe(456);
+        proxy.setHours(5);
+        expect(origDate.getHours()).toBe(5);
+    })
+
 
 
     test("Functions. 'this' should be the proxy", () => {
@@ -1410,6 +1422,17 @@ describe('WatchedProxyFacade integrity', () => {
             expect(set.size).toEqual(0);
         }}
     },"Set");
+
+    testWriterConsitency(() => {return {
+        origObj: new Date(12345),
+        writerFn: (date: Date) => {
+            expect(Object.prototype.toString.call(date)).toBe("[object Date]"); // Used in _.isEqual comparison
+            date.setTime(456);
+            expect(date.getTime()).toBe(456);
+            date.setHours(5);
+            expect(date.getHours()).toBe(5);
+        }}
+    },"Date");
 
 });
 
