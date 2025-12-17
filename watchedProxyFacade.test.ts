@@ -4,7 +4,7 @@ import {
     WatchedProxyFacade
 } from "./watchedProxyFacade";
 import _ from "underscore"
-import {arraysAreEqualsByPredicateFn, isObject, read, visitReplace} from "./Util";
+import {arraysAreEqualsByPredicateFn, isObject, read, throwError, visitReplace} from "./Util";
 import {Clazz, ObjKey, RecordedRead, recordedReadsArraysAreEqual} from "./common";
 import {installChangeTracker} from "./origChangeTracking";
 import {changeTrackedOrigObjects, ProxyFacade, deleteProperty} from "./proxyFacade";
@@ -226,6 +226,17 @@ describe('ProxyFacade and installed write tracker tests', () => {
                 set setMe(value: string) {
                     this._a = value;
                 }
+
+                _e?: string
+
+                get propThatCanThrow(): string {
+                    if(!this._e) throw new Error("Intentional error");
+                    return this._e;
+                }
+
+                set propThatCanThrow(value: string) {
+                    this._e = value;
+                }
             }
 
             const proxy = mode.proxyOrEnhance(origObj);
@@ -237,6 +248,10 @@ describe('ProxyFacade and installed write tracker tests', () => {
 
             proxy.setMe = "y"
             expect(proxy.a).toEqual("y");
+
+            expect(() => proxy.propThatCanThrow).toThrow("Intentional");
+            proxy.propThatCanThrow = "nonErrorValue";
+            expect(proxy.propThatCanThrow).toBe("nonErrorValue");
 
             expect(proxy.artificialProprty).toEqual("some");
 
