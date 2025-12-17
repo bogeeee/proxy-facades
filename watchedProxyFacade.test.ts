@@ -425,6 +425,39 @@ describe('ProxyFacade and installed write tracker tests', () => {
         const proxy = facade.getProxyFor(orig);
         proxy.a = "new"
     })
+
+    test("Should not track whitebox getters", ()=> {
+        const orig = {
+
+            get a() {
+                return "a";
+            },
+
+            set a(value: string) {
+            }
+        }
+        const facade = new WatchedProxyFacade();
+        installChangeTracker(orig);
+        const reads: RecordedRead[] = []
+        facade.onAfterRead(read => reads.push(read));
+        const proxy = facade.getProxyFor(orig);
+        read(proxy.a);
+        expect(reads.length).toBe(0);
+    });
+
+    test("Should fail if setting a property with no setter", () => {
+        const orig = {
+            get x() {
+                return "x"
+            }
+        }
+
+        const facade = new WatchedProxyFacade();
+        installChangeTracker(orig);
+        const proxy = facade.getProxyFor(orig);
+        expect(() => (proxy as any).x = "123").toThrow("setter");
+        expect(() => (orig as any).x = "123").toThrow("setter");
+    })
 });
 
 describe('WatchedProxyFacade tests', () => {

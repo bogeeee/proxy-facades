@@ -68,7 +68,14 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
             if(key === "length" && Array.isArray(target)) {
                 return; // Leave the length property as is. It won't be set directly anyway
             }
-            this.installSetterTrap(key)
+
+            const descriptor = Object.getOwnPropertyDescriptor(target, key)!;
+            if(!descriptor.set) {
+                this.installSetterTrap(key)
+            }
+            else {
+                // Treat existing setters as white-box and leave them as they are
+            }
         });
 
         // Create proxy:
