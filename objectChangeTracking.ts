@@ -1,7 +1,7 @@
 /**
  * Listeners for one object
  */
-import {newDefaultMap} from "./Util";
+import {newDefaultMap, throwError} from "./Util";
 import {
     ClassTrackingConfiguration,
     EventHook,
@@ -80,8 +80,18 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
     installSetterTrap(key: ObjKey) {
         let target = this.target;
         let origDescriptor = getPropertyDescriptor(target, key);
-        //@ts-ignore
-        let currentValue = origDescriptor?.value /* performance */ || target[key];
+
+        // Retrieve current:
+        let current:  {isErrored: false, value: unknown} | {/* Note: isErrored is currently useless, cause proxy-facades treats accessors as white-box */ isErrored: true} = (()=> {
+            try {
+                //@ts-ignore
+                return {isErrored: false, value: origDescriptor?.value /* performance */ || target[key]};
+            }
+            catch (e) {
+                return {isErrored: true} as any
+            }
+        })();
+
         const origSetter = origDescriptor?.set;
         const origGetter = origDescriptor?.get;
 
@@ -94,7 +104,7 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
             delete target[key]; // delete the old, or the following Object.defineProperty will conflict
         }
 
-        function newSetter(this:any, newValue: any) {
+        function newSetter(this:any, newValue: unknown) {
             const changeHooksForTarget = getChangeHooksForObject(target);
 
             if(origSetter !== undefined) {
@@ -105,12 +115,19 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
             }
 
             if(origGetter !== undefined) {
-                currentValue = origGetter.apply(target);  // call the getter. Is this a good idea to refresh the value here?
+                // call the getter. Is this a good idea to refresh the value here?
+                try {
+                    current = {isErrored: false, value: origGetter.apply(target)};
+                }
+                catch (e) {
+                    current = {isErrored: true};
+                    throw e;
+                }
                 throw new TypeError("Target originally had a getter and no setter but the property is set.");
             }
 
             //@ts-ignore
-            if (newValue !== currentValue) { // modify ?
+            if (current.isErrored || newValue !== current.value) { // modify ?
                 // run change operation and call listeners:
                 const hooksToServe: EventHook[] = [];
                 if(Array.isArray(target)) {
@@ -120,7 +137,7 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
                 hooksToServe.push(changeHooksForTarget.changeAnyProperty)
                 runChangeOperation(target, new UnspecificObjectChange(target),hooksToServe,() => {
                     //@ts-ignore
-                    currentValue = newValue;
+                    current = {isErrored: false, value: newValue};
                 });
             }
 
@@ -129,9 +146,17 @@ export class ObjectProxyHandler implements ProxyHandler<object> {
 
         function newGetter(this: any) {
             if(origGetter !== undefined) {
-                currentValue = origGetter.apply(this);  // call the getter
+                // Retrieve value from getter:
+                try {
+                    current = {isErrored: false, value: origGetter.apply(this)};  // call the getter
+                }
+                catch (e) {
+                    current = {isErrored: true}
+                    throw e;
+                }
             }
-            return currentValue;
+            if(current.isErrored) throw new Error("Illegal state");
+            return current.value;
         }
         (newGetter as GetterFlags).origHadGetter = origGetter !== undefined;
 
