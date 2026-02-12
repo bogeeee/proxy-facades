@@ -5,7 +5,7 @@ import {
 } from "./watchedProxyFacade";
 import _ from "underscore"
 import {arraysAreEqualsByPredicateFn, isObject, read, throwError, visitReplace} from "./Util";
-import {Clazz, ObjKey, RecordedRead, recordedReadsArraysAreEqual} from "./common";
+import {ChangeOperation, Clazz, ObjKey, RecordedRead, recordedReadsArraysAreEqual} from "./common";
 import {installChangeTracker} from "./origChangeTracking";
 import {changeTrackedOrigObjects, ProxyFacade, deleteProperty} from "./proxyFacade";
 import exp from "constants";
@@ -1090,6 +1090,7 @@ describe('WatchedProxyFacade record read and watch it', () => {
         }
     });
 
+
     // Key iteration:
     for(const mode of [{name: "Object.keys", readerFn: (obj: Array<unknown>) => read(Object.keys(obj))}, {name: "For...in", readerFn: (obj: Array<unknown>) => {for(const key in obj) read(key)}}]) {
 
@@ -1233,6 +1234,19 @@ describe('WatchedProxyFacade record read and watch it', () => {
             readerFn: (obj: string[]) =>  read(obj.length),
             writerFn: (obj: string[]) =>  obj.unshift("_a","_b"),
     }});
+
+    /*
+    // TODO: Implement in the future.
+    testRecordReadAndWatch<string[]>("react only to fine granular array changes (nice to have)", () => {
+        const obj: {} = {};
+        return {
+            origObj: ["a", "b", "c"],
+            readerFn: (obj) => {read(obj[0])},
+            writerFn: (obj) => {obj[0] = "changed a"},
+            falseWritesFn: (obj) => {obj[1] = "changed b"}
+        }
+    });
+    */
 
     testRecordReadAndWatch<Set<unknown>>("Set.add", () => {
         const obj: Set<string> = new Set<string>;
