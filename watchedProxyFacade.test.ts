@@ -1234,6 +1234,19 @@ describe('WatchedProxyFacade record read and watch it', () => {
             writerFn: (obj: string[]) =>  obj.unshift("_a","_b"),
     }});
 
+    /*
+    // TODO: Implement this feature
+    testRecordReadAndWatch<string[]>("react only to fine granular array changes (nice to have)", () => {
+        const obj: {} = {};
+        return {
+            origObj: ["a", "b", "c"],
+            readerFn: (obj) => {read(obj[0])},
+            writerFn: (obj) => {obj[0] = "changed a"},
+            falseWritesFn: (obj) => {obj[1] = "changed b"}
+        }
+    });
+    */
+
     testRecordReadAndWatch<Set<unknown>>("Set.add", () => {
         const obj: Set<string> = new Set<string>;
         return {
